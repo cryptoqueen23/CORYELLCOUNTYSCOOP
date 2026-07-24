@@ -1,3 +1,5 @@
+const RSS_WORKER_URL = "https://coryell-county-rss.YOUR-SUBDOMAIN.workers.dev";
+
 const menuToggle = document.querySelector("#menu-toggle");
 const primaryMenu = document.querySelector("#primary-menu");
 const menuLinks = [...primaryMenu.querySelectorAll("a")];
@@ -32,9 +34,42 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("resize", () => {
   if (window.innerWidth > 760) {
     closeMenu();
+  }
+});
 
+function setupHeroVideo() {
+  const video = document.querySelector("#hero-video");
+  const toggle = document.querySelector("#video-toggle");
 
-    async function loadWeather() {
+  if (!video || !toggle) return;
+
+  function setToggleState(isPlaying) {
+    toggle.setAttribute(
+      "aria-label",
+      isPlaying ? "Pause background video" : "Play background video"
+    );
+    toggle.querySelector("span").textContent = isPlaying ? "⏸" : "▶";
+  }
+
+  toggle.addEventListener("click", () => {
+    if (video.paused) {
+      video.play();
+      setToggleState(true);
+    } else {
+      video.pause();
+      setToggleState(false);
+    }
+  });
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  if (reduceMotion.matches) {
+    video.pause();
+    setToggleState(false);
+  }
+}
+
+async function loadWeather() {
   const weatherContent = document.querySelector("#weather-content");
 
   if (!weatherContent) return;
@@ -72,7 +107,6 @@ window.addEventListener("resize", () => {
         <div class="weather-details">
           <strong>${current.name}: ${current.shortForecast}</strong>
           <p>Wind: ${current.windSpeed} ${current.windDirection}</p>
-          <p>${current.detailedForecast}</p>
           ${
             next
               ? `<p><strong>${next.name}:</strong> ${next.temperature}&deg;${next.temperatureUnit}, ${next.shortForecast}</p>`
@@ -87,7 +121,7 @@ window.addEventListener("resize", () => {
     weatherContent.innerHTML = `
       <p>
         Local weather is temporarily unavailable.
-        <a href="https://www.weather.gov/" target="_blank" rel="noopener">
+        <a href="https://www.weather.gov/" target="_blank" rel="noopener noreferrer">
           View the National Weather Service
         </a>
       </p>
@@ -95,8 +129,63 @@ window.addEventListener("resize", () => {
   }
 }
 
-loadWeather();
+async function loadTexasHeadlines() {
+  const list = document.querySelector("#rss-news-list");
+
+  if (!list) return;
+
+  try {
+    const response = await fetch(RSS_WORKER_URL);
+
+    if (!response.ok) {
+      throw new Error("Headline service unavailable.");
+    }
+
+    const data = await response.json();
+    const stories = Array.isArray(data.stories) ? data.stories : [];
+
+    if (!stories.length) {
+      list.innerHTML = "<p>No headlines available right now.</p>";
+      return;
+    }
+
+    list.innerHTML = "";
+
+    stories.forEach((story) => {
+      const article = document.createElement("article");
+
+      const source = document.createElement("span");
+      source.textContent = story.source || "Texas News";
+
+      const heading = document.createElement("h3");
+      const link = document.createElement("a");
+      link.href = story.link;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = story.title;
+      heading.appendChild(link);
+
+      article.append(source, heading);
+
+      if (story.pubDate) {
+        const date = document.createElement("p");
+        date.textContent = new Date(story.pubDate).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+        article.appendChild(date);
+      }
+
+      list.appendChild(article);
+    });
+  } catch (error) {
+    console.error(error);
+    list.innerHTML = "<p>Texas headlines are temporarily unavailable.</p>";
   }
-});
+}
+
+setupHeroVideo();
+loadWeather();
+loadTexasHeadlines();
 
 document.querySelector("#year").textContent = new Date().getFullYear();

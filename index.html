@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<link rel="stylesheet" href="styles.css">
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -76,56 +75,50 @@
       </div>
     </section>
 
-    <section class="weather-card" aria-labelledby="weather-title">
-  <div>
-    <span class="section-kicker">Local Weather</span>
-    <h2 id="weather-title">Coryell County Weather</h2>
-  </div>
+    <section class="weather-card container" aria-labelledby="weather-title">
+      <div>
+        <span class="eyebrow">Local Weather</span>
+        <h2 id="weather-title">Coryell County Weather</h2>
+      </div>
 
-  <div id="weather-content">
-    <p>Loading local forecast…</p>
-  </div>
-</section>
+      <div id="weather-content">
+        <p>Loading local forecast…</p>
+      </div>
+    </section>
 
     <section class="hero container" id="top-stories">
       <article class="lead-story">
-        <img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1500&q=85" alt="Texas landscape at sunset">
+        <video
+          class="lead-video"
+          id="hero-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          aria-hidden="true"
+        >
+          <source src="video/coryellcourt.mp4" type="video/mp4">
+        </video>
+
+        <button
+          type="button"
+          class="video-toggle"
+          id="video-toggle"
+          aria-label="Pause background video"
+        >
+          <span aria-hidden="true">⏸</span>
+        </button>
+
         <div class="lead-overlay">
           <span class="category-badge">Local News</span>
-          <h1>Coryell County news, all in one place.</h1>
+          <h1>Coryell County News, All in One Place.</h1>
           <p>Follow county government, schools, public safety, local businesses, community events, and Texas headlines without digging through a dozen pages.</p>
           <a class="button button-primary" href="#local-news">Read the latest</a>
         </div>
-        <section class="news-feed" aria-labelledby="rss-news-title">
-  <div class="section-heading">
-    <div>
-      <span class="section-kicker">Across Texas</span>
-      <h2 id="rss-news-title">Latest Texas Headlines</h2>
-    </div>
-  </div>
-
-  <div id="rss-news-list" class="rss-news-list">
-    <p>Loading headlines…</p>
-  </div>
-</section>
-
-        
       </article>
 
       <aside class="hero-sidebar">
-        <section class="weather-card">
-          <p class="eyebrow">Coryell County Weather</p>
-          <h2>Today at a glance</h2>
-          <div class="weather-row">
-            <span class="weather-icon" aria-hidden="true">☀️</span>
-            <div>
-              <strong>Check the forecast</strong>
-              <span>Weather alerts and local conditions</span>
-            </div>
-          </div>
-          <a href="https://www.weather.gov/" target="_blank" rel="noopener noreferrer">View official forecast →</a>
-        </section>
-
         <section class="quick-links">
           <p class="eyebrow">Useful Links</p>
           <h2>Coryell County resources</h2>
@@ -183,25 +176,14 @@
         <div class="section-heading compact">
           <div>
             <p class="eyebrow">Across the state</p>
-            <h2>Texas News</h2>
+            <h2>Latest Texas Headlines</h2>
           </div>
         </div>
 
-        <div class="headline-list">
+        <div class="headline-list" id="rss-news-list" aria-live="polite">
           <article>
-            <span>Texas Government</span>
-            <h3>Statewide headlines from trusted RSS sources</h3>
-            <p>Connect your Texas Tribune, agency, weather, and public safety feeds here.</p>
-          </article>
-          <article>
-            <span>Business</span>
-            <h3>Texas economy and local business news</h3>
-            <p>Highlight stories that directly affect Coryell County families and businesses.</p>
-          </article>
-          <article>
-            <span>Weather</span>
-            <h3>Severe weather and emergency alerts</h3>
-            <p>Keep the most important notices visible and easy to understand.</p>
+            <span>Loading</span>
+            <h3>Fetching the latest headlines…</h3>
           </article>
         </div>
       </div>
