@@ -221,19 +221,18 @@ button { font: inherit; }
 }
 
 .lead-story {
-  position: relative;
-  min-height: 500px;
-  overflow: hidden;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  background: var(--navy);
+    position: relative;
+    height: 420px;
+    overflow: hidden;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
 .lead-story img {
-  width: 100%;
-  height: 100%;
-  min-height: 500px;
-  object-fit: cover;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
 }
 
 .lead-story::after {
