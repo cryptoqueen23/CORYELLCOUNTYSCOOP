@@ -25,6 +25,6 @@ Weather Service API directly from the browser — no setup needed.
 
 Headlines are different: browsers can't fetch most RSS feeds directly
 because of CORS, so a small Cloudflare Worker fetches the feeds, converts
-them to JSON, and caches the result. See [rss-worker/README.md](rss-worker/README.md)
-for deploy steps. Once deployed, set `RSS_WORKER_URL` at the top of `app.js`
-to your Worker's URL.
+them to JSON, and caches the result. It's already deployed — see
+[rss-worker/README.md](rss-worker/README.md) for the URL and how to
+redeploy after changing the feed list or allowed origins.

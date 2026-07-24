@@ -9,7 +9,9 @@ No database — results are cached at Cloudflare's edge for about 15 minutes.
 1. Install Wrangler if you don't have it: `npm install -g wrangler`
 2. From this folder, log in: `wrangler login`
 3. Deploy: `wrangler deploy`
-4. Wrangler prints your Worker URL, e.g. `https://coryell-county-rss.<your-subdomain>.workers.dev`
+4. Wrangler prints your Worker URL.
+
+Currently deployed at: `https://coryell-county-rss.truewolfflix777.workers.dev`
 
 ## Configure
 

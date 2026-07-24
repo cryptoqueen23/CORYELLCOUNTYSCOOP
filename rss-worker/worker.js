@@ -7,11 +7,11 @@ const APPROVED_FEEDS = [
   { name: "KWTX Central Texas", url: "https://www.kwtx.com/arc/outboundfeeds/rss/?outputType=xml" },
 ];
 
-// Sites allowed to call this Worker from the browser. Add your custom domain
-// here if you attach one to the Vercel deployment.
+// Sites allowed to call this Worker from the browser.
 const ALLOWED_ORIGINS = new Set([
+  "https://www.coryellcountyhub.xyz",
+  "https://coryellcountyhub.xyz",
   "https://coryellcountyscoop.vercel.app",
-  "https://cryptoqueen23.github.io",
 ]);
 
 const CACHE_TTL_SECONDS = 15 * 60;

@@ -1,4 +1,4 @@
-const RSS_WORKER_URL = "https://coryell-county-rss.YOUR-SUBDOMAIN.workers.dev";
+const RSS_WORKER_URL = "https://coryell-county-rss.truewolfflix777.workers.dev";
 
 const menuToggle = document.querySelector("#menu-toggle");
 const primaryMenu = document.querySelector("#primary-menu");
