@@ -131,10 +131,11 @@ button { font: inherit; }
 }
 
 .scoop-profile img {
-  width: 118px;
-  height: 118px;
-  object-fit: cover;
-  border-radius: 14px;
+    width: 118px;
+    height: 118px;
+    object-fit: cover;
+    object-position: center 20%;
+    border-radius: 14px;
 }
 
 .scoop-profile h2 {
