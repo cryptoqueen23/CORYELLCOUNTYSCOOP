@@ -85,9 +85,12 @@ async function loadWeather() {
     }
 
     const pointData = await pointResponse.json();
-    const forecastUrl = pointData.properties.forecast;
+    const { forecast: forecastUrl, observationStations: stationsUrl } = pointData.properties;
 
-    const forecastResponse = await fetch(forecastUrl);
+    const [forecastResponse, stationsResponse] = await Promise.all([
+      fetch(forecastUrl),
+      fetch(stationsUrl),
+    ]);
 
     if (!forecastResponse.ok) {
       throw new Error("Could not retrieve the forecast.");
@@ -95,18 +98,50 @@ async function loadWeather() {
 
     const forecastData = await forecastResponse.json();
     const periods = forecastData.properties.periods;
-    const current = periods[0];
+    const upcoming = periods[0];
     const next = periods[1];
+
+    // The forecast endpoint only gives upcoming periods (e.g. "Tonight"), not
+    // the current temperature. Pull that from the nearest station's latest
+    // real-time observation instead, so the headline number matches reality.
+    let currentTemperature = upcoming.temperature;
+    let currentUnit = upcoming.temperatureUnit;
+    let currentConditions = upcoming.shortForecast;
+
+    if (stationsResponse.ok) {
+      const stationsData = await stationsResponse.json();
+      const stationId = stationsData.features?.[0]?.properties?.stationIdentifier;
+
+      if (stationId) {
+        const obsResponse = await fetch(
+          `https://api.weather.gov/stations/${stationId}/observations/latest`
+        );
+
+        if (obsResponse.ok) {
+          const obsData = await obsResponse.json();
+          const tempC = obsData.properties.temperature?.value;
+
+          if (typeof tempC === "number") {
+            currentTemperature = Math.round((tempC * 9) / 5 + 32);
+            currentUnit = "F";
+          }
+
+          if (obsData.properties.textDescription) {
+            currentConditions = obsData.properties.textDescription;
+          }
+        }
+      }
+    }
 
     weatherContent.innerHTML = `
       <div class="weather-current">
         <div class="weather-temperature">
-          ${current.temperature}&deg;${current.temperatureUnit}
+          ${currentTemperature}&deg;${currentUnit}
         </div>
 
         <div class="weather-details">
-          <strong>${current.name}: ${current.shortForecast}</strong>
-          <p>Wind: ${current.windSpeed} ${current.windDirection}</p>
+          <strong>Right now: ${currentConditions}</strong>
+          <p>Wind: ${upcoming.windSpeed} ${upcoming.windDirection}</p>
           ${
             next
               ? `<p><strong>${next.name}:</strong> ${next.temperature}&deg;${next.temperatureUnit}, ${next.shortForecast}</p>`
@@ -166,11 +201,33 @@ function renderStoryList(list, stories, emptyMessage) {
   });
 }
 
+function renderBreakingNews(stories) {
+  const breakingText = document.querySelector("#breaking-news-text");
+
+  if (!breakingText) return;
+
+  if (!stories.length) {
+    breakingText.textContent = "Coryell County headlines will appear here from your RSS feeds.";
+    return;
+  }
+
+  const topStory = stories[0];
+
+  breakingText.innerHTML = "";
+  const link = document.createElement("a");
+  link.href = topStory.link;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = topStory.title;
+  breakingText.appendChild(link);
+}
+
 async function loadHeadlines() {
   const headlinesList = document.querySelector("#rss-news-list");
   const electionList = document.querySelector("#election-watch-list");
+  const breakingText = document.querySelector("#breaking-news-text");
 
-  if (!headlinesList && !electionList) return;
+  if (!headlinesList && !electionList && !breakingText) return;
 
   try {
     const response = await fetch(RSS_WORKER_URL);
@@ -180,10 +237,14 @@ async function loadHeadlines() {
     }
 
     const data = await response.json();
+    const stories = Array.isArray(data.stories) ? data.stories : [];
 
     if (headlinesList) {
-      const stories = Array.isArray(data.stories) ? data.stories : [];
       renderStoryList(headlinesList, stories, "No headlines available right now.");
+    }
+
+    if (breakingText) {
+      renderBreakingNews(stories);
     }
 
     if (electionList) {
