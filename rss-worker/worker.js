@@ -36,6 +36,17 @@ const GENERIC_ELECTION_KEYWORDS = [
   "super pac",
 ];
 
+// Stories added by hand instead of pulled live from a feed — for coverage
+// worth keeping visible even after it scrolls off the source feed.
+const PINNED_ELECTION_STORIES = [
+  {
+    title: "Billionaire Reid Hoffman gives $10 million to super PAC backing Talarico's Senate bid in Texas",
+    link: "https://www.ksat.com/news/texas/2026/07/16/billionaire-reid-hoffman-gives-10-million-to-super-pac-backing-talaricos-senate-bid-in-texas",
+    pubDate: "2026-07-16T13:57:00-05:00",
+    source: "KSAT San Antonio",
+  },
+];
+
 function isElectionStory(title) {
   const lower = title.toLowerCase();
 
@@ -57,7 +68,7 @@ export default {
     }
 
     const cache = caches.default;
-    const cacheKey = new Request(new URL("/texas-headlines-v3", request.url).toString());
+    const cacheKey = new Request(new URL("/texas-headlines-v4", request.url).toString());
 
     let bodyText;
     const cached = await cache.match(cacheKey);
@@ -123,7 +134,13 @@ async function fetchAllFeeds() {
 
   allStories.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
 
-  const electionStories = allStories.filter((story) => isElectionStory(story.title));
+  const liveElectionStories = allStories.filter((story) => isElectionStory(story.title));
+
+  const pinnedLinks = new Set(PINNED_ELECTION_STORIES.map((story) => story.link));
+  const electionStories = [
+    ...PINNED_ELECTION_STORIES,
+    ...liveElectionStories.filter((story) => !pinnedLinks.has(story.link)),
+  ];
 
   return {
     stories: allStories.slice(0, MAX_STORIES),
