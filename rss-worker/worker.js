@@ -4,7 +4,7 @@
 
 const APPROVED_FEEDS = [
   { name: "KWTX Central Texas", url: "https://www.kwtx.com/arc/outboundfeeds/rss/?outputType=xml" },
-  { name: "KSAT San Antonio", url: "https://www.ksat.com/arc/outboundfeeds/rss/?outputType=xml" },
+  { name: "Texas Scorecard", url: "https://texasscorecard.com/feed/" },
 ];
 
 // Sites allowed to call this Worker from the browser.
@@ -68,7 +68,7 @@ export default {
     }
 
     const cache = caches.default;
-    const cacheKey = new Request(new URL("/texas-headlines-v4", request.url).toString());
+    const cacheKey = new Request(new URL("/texas-headlines-v5", request.url).toString());
 
     let bodyText;
     const cached = await cache.match(cacheKey);
