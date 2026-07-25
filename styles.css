@@ -502,6 +502,12 @@ button { font: inherit; }
   font-weight: 700;
 }
 
+.complaint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .complaint-card small {
   display: block;
   margin-top: 12px;

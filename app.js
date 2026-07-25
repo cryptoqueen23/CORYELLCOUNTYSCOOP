@@ -129,10 +129,48 @@ async function loadWeather() {
   }
 }
 
-async function loadTexasHeadlines() {
-  const list = document.querySelector("#rss-news-list");
+function renderStoryList(list, stories, emptyMessage) {
+  if (!stories.length) {
+    list.innerHTML = `<p>${emptyMessage}</p>`;
+    return;
+  }
 
-  if (!list) return;
+  list.innerHTML = "";
+
+  stories.forEach((story) => {
+    const article = document.createElement("article");
+
+    const source = document.createElement("span");
+    source.textContent = story.source || "Texas News";
+
+    const heading = document.createElement("h3");
+    const link = document.createElement("a");
+    link.href = story.link;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = story.title;
+    heading.appendChild(link);
+
+    article.append(source, heading);
+
+    if (story.pubDate) {
+      const date = document.createElement("p");
+      date.textContent = new Date(story.pubDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      article.appendChild(date);
+    }
+
+    list.appendChild(article);
+  });
+}
+
+async function loadHeadlines() {
+  const headlinesList = document.querySelector("#rss-news-list");
+  const electionList = document.querySelector("#election-watch-list");
+
+  if (!headlinesList && !electionList) return;
 
   try {
     const response = await fetch(RSS_WORKER_URL);
@@ -142,50 +180,25 @@ async function loadTexasHeadlines() {
     }
 
     const data = await response.json();
-    const stories = Array.isArray(data.stories) ? data.stories : [];
 
-    if (!stories.length) {
-      list.innerHTML = "<p>No headlines available right now.</p>";
-      return;
+    if (headlinesList) {
+      const stories = Array.isArray(data.stories) ? data.stories : [];
+      renderStoryList(headlinesList, stories, "No headlines available right now.");
     }
 
-    list.innerHTML = "";
-
-    stories.forEach((story) => {
-      const article = document.createElement("article");
-
-      const source = document.createElement("span");
-      source.textContent = story.source || "Texas News";
-
-      const heading = document.createElement("h3");
-      const link = document.createElement("a");
-      link.href = story.link;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = story.title;
-      heading.appendChild(link);
-
-      article.append(source, heading);
-
-      if (story.pubDate) {
-        const date = document.createElement("p");
-        date.textContent = new Date(story.pubDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
-        article.appendChild(date);
-      }
-
-      list.appendChild(article);
-    });
+    if (electionList) {
+      const electionStories = Array.isArray(data.electionStories) ? data.electionStories : [];
+      renderStoryList(electionList, electionStories, "No election coverage available right now.");
+    }
   } catch (error) {
     console.error(error);
-    list.innerHTML = "<p>Texas headlines are temporarily unavailable.</p>";
+    if (headlinesList) headlinesList.innerHTML = "<p>Texas headlines are temporarily unavailable.</p>";
+    if (electionList) electionList.innerHTML = "<p>Election coverage is temporarily unavailable.</p>";
   }
 }
 
 setupHeroVideo();
 loadWeather();
-loadTexasHeadlines();
+loadHeadlines();
 
 document.querySelector("#year").textContent = new Date().getFullYear();

@@ -3,8 +3,8 @@
 // No database. Results are cached at Cloudflare's edge for CACHE_TTL_SECONDS.
 
 const APPROVED_FEEDS = [
-  { name: "Texas Tribune", url: "https://www.texastribune.org/feeds/main/" },
   { name: "KWTX Central Texas", url: "https://www.kwtx.com/arc/outboundfeeds/rss/?outputType=xml" },
+  { name: "KSAT San Antonio", url: "https://www.ksat.com/arc/outboundfeeds/rss/?outputType=xml" },
 ];
 
 // Sites allowed to call this Worker from the browser.
@@ -17,6 +17,36 @@ const ALLOWED_ORIGINS = new Set([
 const CACHE_TTL_SECONDS = 15 * 60;
 const MAX_STORIES = 8;
 
+// Stories that name a Texas candidate always qualify for "Election Watch".
+// Generic election terms ("primary", "campaign", etc.) also need to mention
+// Texas, since wire stories about other states' races use the same words.
+const TEXAS_CANDIDATE_KEYWORDS = ["talarico", "paxton", "abbott", "ted cruz", "colin allred", "wesley hunt"];
+
+const GENERIC_ELECTION_KEYWORDS = [
+  "election",
+  "midterm",
+  "primary",
+  "runoff",
+  "ballot",
+  "candidate",
+  "voter",
+  "senate race",
+  "governor's race",
+  "campaign",
+  "super pac",
+];
+
+function isElectionStory(title) {
+  const lower = title.toLowerCase();
+
+  if (TEXAS_CANDIDATE_KEYWORDS.some((keyword) => lower.includes(keyword))) {
+    return true;
+  }
+
+  const hasGenericTerm = GENERIC_ELECTION_KEYWORDS.some((keyword) => lower.includes(keyword));
+  return hasGenericTerm && lower.includes("texas");
+}
+
 export default {
   async fetch(request, env, ctx) {
     const origin = request.headers.get("Origin") || "";
@@ -27,7 +57,7 @@ export default {
     }
 
     const cache = caches.default;
-    const cacheKey = new Request(new URL("/texas-headlines", request.url).toString());
+    const cacheKey = new Request(new URL("/texas-headlines-v3", request.url).toString());
 
     let bodyText;
     const cached = await cache.match(cacheKey);
@@ -35,8 +65,8 @@ export default {
     if (cached) {
       bodyText = await cached.text();
     } else {
-      const stories = await fetchAllFeeds();
-      bodyText = JSON.stringify({ updated: new Date().toISOString(), stories });
+      const { stories, electionStories } = await fetchAllFeeds();
+      bodyText = JSON.stringify({ updated: new Date().toISOString(), stories, electionStories });
 
       const cacheResponse = new Response(bodyText, {
         headers: {
@@ -93,7 +123,12 @@ async function fetchAllFeeds() {
 
   allStories.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
 
-  return allStories.slice(0, MAX_STORIES);
+  const electionStories = allStories.filter((story) => isElectionStory(story.title));
+
+  return {
+    stories: allStories.slice(0, MAX_STORIES),
+    electionStories: electionStories.slice(0, MAX_STORIES),
+  };
 }
 
 function parseFeed(xml, sourceName) {
