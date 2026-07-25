@@ -213,6 +213,8 @@ button { font: inherit; }
 
 .breaking-inner p { margin: 0; font-weight: 700; }
 
+.breaking-source { font-weight: 400; color: var(--muted); }
+
 .hero {
   padding-block: 26px 46px;
   display: grid;

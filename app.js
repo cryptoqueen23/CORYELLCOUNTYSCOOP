@@ -176,7 +176,7 @@ function renderStoryList(list, stories, emptyMessage) {
     const article = document.createElement("article");
 
     const source = document.createElement("span");
-    source.textContent = story.source || "Texas News";
+    source.textContent = `Source: ${story.source || "Texas News"}`;
 
     const heading = document.createElement("h3");
     const link = document.createElement("a");
@@ -219,7 +219,12 @@ function renderBreakingNews(stories) {
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.textContent = topStory.title;
-  breakingText.appendChild(link);
+
+  const source = document.createElement("span");
+  source.className = "breaking-source";
+  source.textContent = ` — Source: ${topStory.source || "Texas News"}`;
+
+  breakingText.append(link, source);
 }
 
 async function loadHeadlines() {
