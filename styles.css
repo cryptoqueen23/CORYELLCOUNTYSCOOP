@@ -178,6 +178,19 @@ button { font: inherit; }
 
 .primary-menu a:hover { background: var(--red); }
 
+.nav-cta-pulse {
+  border-radius: 999px;
+  margin: 0 4px;
+  animation: nav-cta-pulse 2.2s ease-in-out infinite;
+}
+
+.nav-cta-pulse:hover { animation-play-state: paused; }
+
+@keyframes nav-cta-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(163, 15, 23, 0.55); }
+  50% { box-shadow: 0 0 0 8px rgba(163, 15, 23, 0); }
+}
+
 .menu-toggle {
   display: none;
   align-items: center;
