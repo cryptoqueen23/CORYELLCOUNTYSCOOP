@@ -1,3 +1,20 @@
 name = "coryell-county-rss"
 main = "worker.js"
 compatibility_date = "2026-07-24"
+
+# Every 2 minutes, refresh the few most overdue sources. Each source has its own minimum
+# interval in lib/sources.js, so slower sources are skipped on most runs.
+[triggers]
+crons = ["*/2 * * * *"]
+
+# REQUIRED for reliable operation: shared storage for the published snapshot and
+# last-known-good results. Without it the Worker falls back to Cloudflare's
+# per-datacenter cache, which the cron job and your visitors do not share.
+# Free tier covers this (a few hundred writes a day against a 1,000 limit).
+# Create it once with
+#   npx wrangler kv namespace create NEWS_KV
+# then uncomment the block below and paste the id it prints.
+#
+# [[kv_namespaces]]
+# binding = "NEWS_KV"
+# id = "PASTE_ID_HERE"

@@ -1,0 +1,11 @@
+import { SOURCES } from "../lib/sources.js";
+import { runSource } from "../lib/fetchers.js";
+import { applyOutcomes, buildSnapshot, emptyState } from "../lib/aggregate.js";
+const now = Date.now();
+const res = await Promise.all(SOURCES.map(s => runSource(s, now)));
+const out = {}; SOURCES.forEach((s,i)=>out[s.id]=res[i]);
+const snap = buildSnapshot(applyOutcomes(emptyState(), SOURCES, out, now), SOURCES, now);
+console.log(snap.sourcesOk + "/" + snap.sourcesTotal, snap.stories.length);
+for (const h of snap.health) console.log(h.status.padEnd(7), h.id, h.itemsFetched, h.itemsShown, h.lastError||"");
+for (const s of snap.stories.slice(0,40)) console.log(s.location.padEnd(15), s.locationBasis.padEnd(9), s.categories.join(","), "|", (s.pubDate||"undated").slice(0,10), "|", s.publisher, "|", s.title.slice(0,70));
+console.log("ELECTION:"); for (const s of snap.electionStories) console.log(s.location, s.publisher, s.title.slice(0,80));

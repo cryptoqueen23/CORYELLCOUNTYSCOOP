@@ -1,0 +1,52 @@
+{
+  "_help": "Edit this file to change the Life & Health Insurance section. Links must start with https:// or tel:. Set insurance.enabled to false to hide the whole section. See docs/INSURANCE.md.",
+  "insurance": {
+    "enabled": true,
+    "sectionLabel": "Business service from Marimer Cruz-Nieves. Not part of the news reporting above.",
+    "lead": "Life and health insurance can feel confusing. If you would like help understanding your options, you can start here. There is no cost to ask.",
+    "agent": "Marimer Cruz-Nieves, licensed insurance agent (Phoenix Securitas)",
+    "licenseLine": "NPN 21566471. Licensed in TX, FL, OH and NY.",
+    "privacyNote": "Please do not send medical or health details through this website, email, social media or text. Share those privately with your agent on a call or during secure enrollment.",
+    "life": {
+      "title": "Life insurance",
+      "description": "Learn how life insurance can help protect your family's finances.",
+      "cta": "Explore Life Insurance",
+      "url": "https://phoenixsecuritas.com/#products"
+    },
+    "health": {
+      "title": "Health insurance",
+      "description": "Understand health coverage options, including marketplace plans and Medicare, with a person to guide you.",
+      "cta": "Explore Health Insurance",
+      "url": "https://phoenixsecuritas.com/#products"
+    },
+    "learn": {
+      "label": "Read Insurance 101",
+      "url": "https://phoenixsecuritas.com/insurance-101.html"
+    },
+    "request": {
+      "label": "Request a free quote",
+      "url": "https://phoenixsecuritas.com/#cta-heading"
+    },
+    "telegram": {
+      "label": "Message me on Telegram",
+      "url": "https://t.me/mcn1611"
+    },
+    "schedule": {
+      "label": "Schedule an appointment",
+      "url": "https://api.zybrzeus.com/calendar/mcruznieves"
+    },
+    "phone": {
+      "label": "Call (512) 387-2748",
+      "url": "tel:+15123872748"
+    },
+    "allLinks": {
+      "label": "All my links",
+      "url": "https://tree.phoenixsecuritas.com"
+    },
+    "promo": {
+      "title": "Need life or health insurance?",
+      "text": "Talk with a licensed agent, free of charge.",
+      "cta": "See your options"
+    }
+  }
+}

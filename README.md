@@ -1,28 +1,18 @@
 # The Coryell County Messenger
 
-Keep these files in the same folder:
+Static site (Vercel) plus a Cloudflare Worker that gathers local and Texas news
+automatically. Nothing is published by hand.
 
-- index.html
-- styles.css
-- app.js
-- mari-and-dog.jpeg
-- video/coryellcourt.mp4
+Files at the site root: `index.html`, `styles.css`, `app.js`, `news-logic.js`,
+`mari-and-dog.jpeg`. `video/coryellcourt.mp4` is kept but no longer loaded.
 
-Open index.html to preview the website.
+Preview locally: open `index.html` (it fetches headlines from the deployed Worker).
 
-Contact links throughout the site point to marimercruz8@gmail.com.
+- Worker, sources, deploy: [rss-worker/README.md](rss-worker/README.md), [rss-worker/SOURCES.md](rss-worker/SOURCES.md)
+- Audit, architecture, test results, limitations: [docs/MODERNIZATION.md](docs/MODERNIZATION.md)
+- Life & Health Insurance section and how to edit it: [docs/INSURANCE.md](docs/INSURANCE.md)
+- Editorial rules for contributors: [CLAUDE.md](CLAUDE.md)
 
-The Facebook group is already linked:
-https://www.facebook.com/groups/255196943007202
+Tests: `cd rss-worker && npm test`, and `node --test "test/*.test.js"` here.
 
-## Latest Texas Headlines (RSS)
-
-The homepage's "Latest Texas Headlines" section and the local weather card
-are the only dynamic pieces of the site. Weather calls the free National
-Weather Service API directly from the browser — no setup needed.
-
-Headlines are different: browsers can't fetch most RSS feeds directly
-because of CORS, so a small Cloudflare Worker fetches the feeds, converts
-them to JSON, and caches the result. It's already deployed — see
-[rss-worker/README.md](rss-worker/README.md) for the URL and how to
-redeploy after changing the feed list or allowed origins.
+Contact: marimercruz8@gmail.com. Facebook group: https://www.facebook.com/groups/255196943007202
