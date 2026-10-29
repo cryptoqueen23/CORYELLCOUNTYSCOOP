@@ -336,7 +336,7 @@ function showSnapshot(snapshot, { fromSavedCopy }) {
   });
 
   const status = document.querySelector("#feed-status");
-  status.dataset.base = `Headlines checked ${updated} Central (${logic.ageText(snapshot.generatedAt, now)}).${snapshot.legacy ? "" : ` ${snapshot.sourcesOk} of ${snapshot.sourcesTotal} sources responding.`}`;
+  status.dataset.base = `Headlines updated ${updated} Central (${logic.ageText(snapshot.generatedAt, now)}).${snapshot.legacy ? "" : ` ${snapshot.sourcesOk} of ${snapshot.sourcesTotal} sources responding.`}`;
   lastStatus = "";
 
   const notice = document.querySelector("#feed-notice");
@@ -443,7 +443,13 @@ async function applySiteConfig() {
   });
 
   document.querySelectorAll("[data-cfg-href]").forEach((node) => {
-    const href = safeConfigHref(configValue(config, node.dataset.cfgHref));
+    const value = configValue(config, node.dataset.cfgHref);
+    // An empty string removes that button (for example, to take the phone number off the site).
+    if (value === "") {
+      (node.closest("li") || node).hidden = true;
+      return;
+    }
+    const href = safeConfigHref(value);
     if (href) node.href = href;
   });
 }

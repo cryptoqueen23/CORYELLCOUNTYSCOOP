@@ -72,11 +72,11 @@ Sections then sort by date. Texas Headlines lists official announcements first
 
 Run 2026-10-29:
 
-- `rss-worker`: `npm test` 41 passed, 0 failed (RSS/Atom/empty/malformed parsing,
+- `rss-worker`: `npm test` 50 passed, 0 failed (RSS/Atom/empty/malformed parsing,
   duplicates, geographic matching, the "Selection" false match, dates including
   future dates and time-zone independence, expiry, source failure and
   last-known-good, backoff, allowlist, CORS, preflight, total-outage handler test).
-- Site: `node --test "test/*.test.js"` 19 passed, 0 failed (search, filters,
+- Site: `node --test "test/*.test.js"` 22 passed, 0 failed (search, filters,
   sections, date labels, top strip expiry, saved copies, undated ordering,
   unsafe links, insurance config/HTML consistency, no dead links).
 - Browser (Chromium via Playwright, live data): no horizontal scroll at 320,
@@ -94,6 +94,8 @@ Run 2026-10-29:
 ## 5. Deployment (two separate steps; order matters)
 
 Nothing has been pushed or deployed.
+
+(The exact, current procedure is in [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md); where it differs from this section, the checklist wins.)
 
 1. **Worker first**: see `rss-worker/README.md` (KV namespace required for reliable use,
    `wrangler deploy`, check `/health`). The old site keeps working with the new

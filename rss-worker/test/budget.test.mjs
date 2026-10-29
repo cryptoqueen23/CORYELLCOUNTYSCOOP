@@ -1,17 +1,18 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { applyOutcomes, buildSnapshot, emptyState, MAX_SOURCES_PER_RUN, pickDue } from "../lib/aggregate.js";
+import { applyOutcomes, buildSnapshot, emptyState, RUN_BUDGET, pickDue } from "../lib/aggregate.js";
 import { dedupe } from "../lib/dedupe.js";
 import { parseDate } from "../lib/parse.js";
 import { SOURCES } from "../lib/sources.js";
 
 const NOW = Date.parse("2026-10-29T18:00:00Z");
 
-test("a run fetches at most a few sources, never-fetched ones first", () => {
+test("a run fetches only a budget of sources, never-fetched ones first", () => {
   const picked = pickDue(SOURCES, emptyState(), NOW);
-  assert.equal(picked.length, MAX_SOURCES_PER_RUN);
-  assert.ok(SOURCES.length > MAX_SOURCES_PER_RUN, "the cap actually matters");
+  const cost = picked.reduce((sum, source) => sum + (source.cost || 1), 0);
+  assert.ok(picked.length >= 1 && picked.length < SOURCES.length);
+  assert.ok(cost <= RUN_BUDGET);
 });
 
 test("over successive runs every source gets fetched, most overdue first", () => {

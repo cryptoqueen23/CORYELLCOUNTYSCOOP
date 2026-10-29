@@ -53,6 +53,7 @@ republishes). You can change every label, description and link, or set
 `"enabled": false` under `insurance` to hide the nav link, sidebar card and section.
 
 - Links must start with `https://`, `tel:` or `mailto:`; anything else is ignored.
+- To remove a single button (for example the phone number), set its `url` to `""`.
 - If the file is missing or broken, the page shows the same defaults built into the HTML.
 - `npm`-free check after editing: `node --test "test/*.test.js"` confirms the HTML
   defaults and config agree and no link is dead-looking (`#`).

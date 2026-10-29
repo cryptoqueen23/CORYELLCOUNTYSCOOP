@@ -919,3 +919,5 @@ h1, h2, h3 { overflow-wrap: anywhere; }
   .primary-menu { flex-wrap: wrap; }
   .primary-menu a { padding-block: 14px; padding-inline: 9px; }
 }
+
+.ins-disclosure { font-size: 0.8rem; }

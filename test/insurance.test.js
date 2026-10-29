@@ -57,7 +57,7 @@ test("the site collects no personal or health information itself", () => {
 
 test("the insurance section is labelled as a business service and discloses the licence", () => {
   assert.match(config.insurance.sectionLabel, /Not part of the news/i);
-  assert.match(config.insurance.licenseLine, /NPN \d+/);
+  assert.match(config.insurance.licenseLine, /NPN:? \d+/);
   assert.match(config.insurance.privacyNote, /medical or health details/i);
 });
 
@@ -65,4 +65,21 @@ test("insurance can be switched off without touching code", () => {
   assert.equal(config.insurance.enabled, true);
   const flagged = html.match(/<[a-z0-9]+[^>]*\sdata-insurance[\s>]/g) || [];
   assert.ok(flagged.length >= 3, "nav link, promo and section carry data-insurance");
+});
+
+test("the full disclosure matches the required elements and accompanies any Medicare mention", () => {
+  const d = config.insurance.disclosure;
+  for (const part of ["Phoenix Securitas Premium", "NPN: 21566471", "Texas, Florida, Ohio, and New York", "educational purposes only", "1-800-MEDICARE", "Medicare.gov"]) {
+    assert.ok(d.includes(part), "disclosure missing: " + part);
+  }
+  const mentionsMedicare = Object.values(config.insurance).some((v) => typeof v === "object" && JSON.stringify(v).includes("Medicare"));
+  assert.ok(!mentionsMedicare || d.includes("we do not offer every plan"), "Medicare mention needs the plan-availability disclaimer");
+  assert.ok(html.includes(d), "the HTML default shows the same disclosure");
+});
+
+test("claims are limited to what the Phoenix Securitas site already says", () => {
+  const text = JSON.stringify(config.insurance);
+  assert.ok(!/\$\d|per month|lowest|best rate|guarantee|cheapest|approved|no health exam/i.test(text), "no prices or coverage promises");
+  const withoutPhone = JSON.stringify({ ...config.insurance, phone: undefined });
+  assert.ok(!/\d{3}[-. )]+\d{3}[-. ]\d{4}/.test(withoutPhone), "phone number appears only in the phone entry");
 });

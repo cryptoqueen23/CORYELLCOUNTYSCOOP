@@ -1,15 +1,17 @@
 // Cloudflare Worker: aggregates approved local and Texas news sources into one
 // JSON snapshot for The Coryell County Messenger.
 //
-// - A cron trigger (every 3 minutes) refreshes the few most overdue sources.
-//   Each run is deliberately small so it fits the Workers Free plan's CPU limit.
+// - A cron trigger (every 2 minutes) refreshes the most overdue sources, up to a
+//   small CPU-cost budget per run, so each run fits the Workers Free plan's CPU limit.
 // - Each source is fetched independently; one failure never blocks the rest and
 //   the last known good items are kept (see lib/aggregate.js).
 // - State and the published snapshot live in the NEWS_KV binding. Without it the
 //   Worker falls back to the per-datacenter Cache API, which is NOT shared between
 //   the cron's location and visitors' locations, so KV is needed for reliable use.
+// - KV writes are rationed (free plan: 1,000/day): state is written once per run that
+//   did work; the snapshot only when what visitors see changed, or as a heartbeat.
 // - GET /          the public snapshot (stories + feed health)
-// - GET /health    feed health only
+// - GET /health    feed health plus today's run and KV-write counts
 
 import { applyOutcomes, buildSnapshot, emptyState, pickDue } from "./lib/aggregate.js";
 import { runSource } from "./lib/fetchers.js";
@@ -21,9 +23,12 @@ const ALLOWED_ORIGINS = new Set([
   "https://coryellcountyscoop.vercel.app",
 ]);
 
+// The snapshot is rewritten at least this often even when nothing changed, so
+// its "updated" time (and the staleness check below) stays honest.
+const HEARTBEAT_MS = 20 * 60 * 1000;
 // A snapshot older than this is refreshed on demand (serving the old one
 // meanwhile) in case the cron trigger is not set up or has paused.
-const STALE_AFTER_MS = 20 * 60 * 1000;
+const STALE_AFTER_MS = 45 * 60 * 1000;
 const STATE_KEY = "news-state-v3";
 const SNAPSHOT_KEY = "news-snapshot-v3";
 
@@ -60,8 +65,20 @@ export function refresh(env, options = {}) {
   return inFlight;
 }
 
+const field = (text, name) => (text && (text.match(new RegExp(`"${name}":"([^"]+)"`)) || [])[1]) || "";
+
+// Counts runs and KV writes per UTC day so real usage can be checked at /health.
+function bumpStats(state, now, writes) {
+  const day = new Date(now).toISOString().slice(0, 10);
+  const stats = state.stats && state.stats.day === day ? state.stats : { day, runs: 0, kvWrites: 0, snapshotWrites: 0 };
+  stats.runs += 1;
+  stats.kvWrites += writes;
+  stats.snapshotWrites += writes - 1;
+  state.stats = stats;
+}
+
 // Fetches the most overdue sources (all of them when `force`), merges into saved
-// state and publishes a new snapshot. Does nothing when no source is due.
+// state and publishes a new snapshot if it changed. Does nothing when no source is due.
 async function runRefresh(env, { force = false } = {}) {
   const now = Date.now();
   const stateText = await store.getText(env, STATE_KEY);
@@ -77,11 +94,18 @@ async function runRefresh(env, { force = false } = {}) {
   });
 
   const nextState = applyOutcomes(state, SOURCES, outcomes, now);
-  const snapshotText = JSON.stringify(buildSnapshot(nextState, SOURCES, now));
+  nextState.stats = state.stats;
+  const snapshot = buildSnapshot(nextState, SOURCES, now);
 
+  const previous = await store.getText(env, SNAPSHOT_KEY);
+  const changed = field(previous, "fingerprint") !== snapshot.fingerprint;
+  const heartbeatDue = now - Date.parse(field(previous, "generatedAt") || 0) > HEARTBEAT_MS;
+  const publish = !previous || changed || heartbeatDue;
+
+  bumpStats(nextState, now, publish ? 2 : 1);
   await store.putText(env, STATE_KEY, JSON.stringify(nextState));
-  await store.putText(env, SNAPSHOT_KEY, snapshotText);
-  return snapshotText;
+  if (publish) await store.putText(env, SNAPSHOT_KEY, JSON.stringify(snapshot));
+  return snapshot;
 }
 
 function corsHeaders(origin) {
@@ -129,18 +153,20 @@ export default {
       ctx.waitUntil(refresh(env));
       snapshotText = JSON.stringify(buildSnapshot(emptyState(), SOURCES, Date.now()));
     } else {
-      // Cheap staleness check without parsing the whole snapshot.
-      const generated = Date.parse((snapshotText.match(/"generatedAt":"([^"]+)"/) || [])[1] || "");
+      const generated = Date.parse(field(snapshotText, "generatedAt"));
       if (!generated || Date.now() - generated > STALE_AFTER_MS) ctx.waitUntil(refresh(env));
     }
 
     if (path === "/health") {
       const snapshot = JSON.parse(snapshotText);
+      const stateText = await store.getText(env, STATE_KEY);
+      const stats = stateText ? JSON.parse(stateText).stats || null : null;
       return json(
         {
           generatedAt: snapshot.generatedAt,
           sourcesOk: snapshot.sourcesOk,
           sourcesTotal: snapshot.sourcesTotal,
+          today: stats,
           health: snapshot.health,
         },
         origin,

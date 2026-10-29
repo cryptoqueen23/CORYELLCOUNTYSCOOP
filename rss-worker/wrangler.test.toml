@@ -1,0 +1,23 @@
+# ISOLATED TEST WORKER. Separate name and separate KV namespace, so production
+# (coryell-county-rss) is never touched. Used for local runs (`wrangler dev`) and,
+# once approved, for a trial deploy under its own *.workers.dev address.
+#
+# Run locally (no Cloudflare account resources used):
+#   wrangler dev -c wrangler.test.toml --test-scheduled --persist-to .wrangler-test
+# Trial deploy (needs approval; creates a NEW Worker, leaves production alone):
+#   wrangler kv namespace create NEWS_KV_TEST   (paste the id below)
+#   wrangler deploy -c wrangler.test.toml
+#   wrangler tail coryell-county-rss-test --format json   (cpuTime / wallTime per run)
+name = "coryell-county-rss-test"
+main = "worker.js"
+compatibility_date = "2026-07-24"
+
+[triggers]
+crons = ["*/2 * * * *"]
+
+[observability]
+enabled = true
+
+[[kv_namespaces]]
+binding = "NEWS_KV"
+id = "LOCAL_TEST_PLACEHOLDER"

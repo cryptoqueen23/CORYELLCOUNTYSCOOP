@@ -21,7 +21,9 @@ const LOCATION_WEIGHT = {
 
 // Free-plan Workers get ~10 ms of CPU per invocation, so one run only fetches
 // the few most overdue sources; the rest wait for the next cron run.
-export const MAX_SOURCES_PER_RUN = 2;
+// A run fetches overdue sources until this many cost units are used (see `cost` in
+// sources.js). Light sources batch together; heavy ones run nearly alone.
+export const RUN_BUDGET = 5;
 
 export function emptyState() {
   return { sources: {}, firstSeen: {} };
@@ -39,14 +41,33 @@ function overdueRatio(source, sourceState, now) {
   return elapsed / Math.max(source.refreshMinutes, backoffMinutes(sourceState.consecutiveFailures || 0));
 }
 
-// The most overdue due sources, never-fetched first, capped per run.
-export function pickDue(sources, state, now, limit = MAX_SOURCES_PER_RUN) {
-  return sources
+// Sources that are due are not fetched the instant they come due. A run only starts
+// when enough work has piled up to fill the budget, or when some source has waited
+// 25% longer than its interval. Batching means fewer runs and fewer KV writes, and
+// the longest extra wait is a quarter of a source's own interval.
+export const PATIENCE = 1.25;
+
+// The most overdue due sources (never-fetched first), within the run's cost budget.
+export function pickDue(sources, state, now, budget = RUN_BUDGET) {
+  const ordered = sources
     .filter((source) => isDue(source, state.sources[source.id], now))
     .map((source) => ({ source, overdue: overdueRatio(source, state.sources[source.id], now) }))
-    .sort((a, b) => (a.overdue === b.overdue ? 0 : a.overdue > b.overdue ? -1 : 1))
-    .slice(0, limit)
-    .map((entry) => entry.source);
+    .sort((a, b) => (a.overdue === b.overdue ? 0 : a.overdue > b.overdue ? -1 : 1));
+
+  const dueCost = ordered.reduce((sum, entry) => sum + (entry.source.cost || 1), 0);
+  const urgent = ordered.some((entry) => entry.overdue >= PATIENCE);
+  if (!ordered.length || (!urgent && dueCost < budget)) return [];
+
+  const picked = [];
+  let used = 0;
+  for (const { source } of ordered) {
+    const cost = source.cost || 1;
+    // Always take the most overdue source, even if it alone exceeds the budget.
+    if (picked.length && used + cost > budget) continue;
+    picked.push(source);
+    used += cost;
+  }
+  return picked;
 }
 
 // Everything about an item that does not change with time (place, topics,
@@ -242,6 +263,21 @@ export function buildHealth(state, sources, stories, now) {
   });
 }
 
+// Short hash of what visitors can actually see change: which stories exist, whether
+// each is a saved copy, and each source's status. Used to skip pointless KV writes.
+export function fingerprint(stories, health) {
+  let hash = 2166136261;
+  const feed = (text) => {
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+  };
+  for (const story of stories) feed(`${story.id}${story.stale ? "s" : ""}|`);
+  for (const entry of health) feed(`${entry.id}:${entry.status}|`);
+  return (hash >>> 0).toString(36);
+}
+
 export function buildSnapshot(state, sources, now) {
   const stories = buildStories(state, sources, now);
   const health = buildHealth(state, sources, stories, now);
@@ -250,6 +286,7 @@ export function buildSnapshot(state, sources, now) {
   return {
     schema: 2,
     generatedAt: new Date(now).toISOString(),
+    fingerprint: fingerprint(stories, health),
     stories,
     health,
     sourcesOk: health.filter((entry) => entry.status === "ok").length,

@@ -41,8 +41,9 @@ MaxPreps listings (`isBlocked` in `lib/classify.js`).
 
 ## How freshness and failures work
 
-- A cron trigger runs every 2 minutes and fetches only the 2 most overdue sources
-  (never-fetched first). Each source has its own minimum interval (`refreshMinutes`:
+- A cron trigger runs every 2 minutes. A run only does work when enough sources are due to
+  fill its CPU-cost budget, or one has waited 25% past its interval; it then fetches the most
+  overdue sources (never-fetched first) up to the budget. Each source has its own minimum interval (`refreshMinutes`:
   15 to 120 minutes) and is skipped until due. A full cycle through all 17 sources
   takes about 20 minutes after a fresh deploy; afterwards each source is refreshed at
   its own interval.
@@ -62,12 +63,14 @@ MaxPreps listings (`isBlocked` in `lib/classify.js`).
 - 100,000 Worker requests/day; 50 subrequests and **10 ms CPU per invocation**
   (cron invocations too); 5 cron triggers per account.
 - KV: 100,000 reads/day, 1,000 writes/day.
-- This design: at most 2 source fetches (plus 0 extra) per run; each run that fetches
-  writes 2 KV keys. Estimated 300-400 runs with work per day, so about 600-800 KV
-  writes/day. Each page view reads 1 KV key.
-- CPU: measured on a laptop (warm Node, not Cloudflare) a typical 2-source run is about
-  5-8 ms and the heaviest case about 10 ms. That is inside the limit on paper
-  with little margin, and **unverified until deployed**. Going over the limit makes
+- This design (simulated with `scripts/simulate-day.mjs`): about 224 runs with work and 660
+  source fetches per day; the state key is written once per run with work and the snapshot
+  only when its content changes or every 20 minutes, so **about 290-330 KV writes/day**
+  (30% of the limit). Each page view reads 1 KV key and writes none. `/health` shows the real
+  counts (`today`).
+- CPU: measured on a laptop (warm Node, not Cloudflare) a run costs roughly 4 ms fixed plus
+  1-4 ms per source, budgeted to about 9 ms in the worst case. That is inside the limit on paper
+  with little margin, and **unverified until the trial Worker is deployed and tailed**. Going over the limit makes
   that run fail (error 1102); it does not bill the account. The previous snapshot keeps
   being served and the page says it has not refreshed recently.
 - Feeds with bogus dates: the Texas Secretary of State feed stamps current items

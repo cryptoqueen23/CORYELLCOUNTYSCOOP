@@ -11,6 +11,7 @@
 //   refreshMinutes minimum minutes between fetches of this source
 //   maxAgeDays    items older than this are not shown
 //   cap           most items one source may contribute
+//   cost          rough CPU cost of one fetch+parse in ms (default 1); runs are budgeted by it
 
 const GNEWS = (query) =>
   `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
@@ -69,6 +70,7 @@ export const SOURCES = [
   // ---- Official: Texas ----------------------------------------------------
   {
     id: "tx-dps",
+    cost: 4,
     name: "Texas Department of Public Safety",
     kind: "official",
     fetcher: "rss",
@@ -93,6 +95,7 @@ export const SOURCES = [
   },
   {
     id: "tx-sos",
+    cost: 2,
     name: "Texas Secretary of State",
     kind: "official",
     fetcher: "rss",
@@ -155,6 +158,7 @@ export const SOURCES = [
   // ---- News: Texas statewide ---------------------------------------------
   {
     id: "tx-scorecard",
+    cost: 2,
     name: "Texas Scorecard",
     kind: "news",
     fetcher: "rss",
@@ -181,6 +185,7 @@ export const SOURCES = [
   // ---- News: Google News searches (surface local papers, per-story publisher)
   {
     id: "gn-copperas-cove",
+    cost: 2,
     name: "Google News: Copperas Cove",
     kind: "news",
     fetcher: "gnews",
@@ -193,6 +198,7 @@ export const SOURCES = [
   },
   {
     id: "gn-gatesville",
+    cost: 2,
     name: "Google News: Gatesville",
     kind: "news",
     fetcher: "gnews",
@@ -205,6 +211,7 @@ export const SOURCES = [
   },
   {
     id: "gn-coryell",
+    cost: 2,
     name: "Google News: Coryell County",
     kind: "news",
     fetcher: "gnews",
