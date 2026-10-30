@@ -1,23 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { RUN_BUDGET, applyOutcomes, emptyState, pickDue } from "../lib/aggregate.js";
+import { buildSchedule, sourceIdForTime, CYCLE_SLOTS } from "../lib/schedule.js";
 import { SOURCES } from "../lib/sources.js";
 
-// A fake KV that counts operations, and a fake network that returns a fixed feed.
 function fakeKv() {
   const data = new Map();
   return {
     reads: 0,
     writes: 0,
-    writesByKey: {},
     async get(key) {
       this.reads += 1;
       return data.has(key) ? data.get(key) : null;
     },
     async put(key, value) {
       this.writes += 1;
-      this.writesByKey[key] = (this.writesByKey[key] || 0) + 1;
       data.set(key, value);
     },
   };
@@ -30,75 +27,62 @@ const rssFor = () =>
     .join("")}</channel></rss>`;
 
 globalThis.caches = { default: { async match() {}, async put() {} } };
-globalThis.fetch = async (url) => {
-  const text = String(url);
-  if (text.includes("gatesvilletx.com")) return new Response("{}");
-  if (text.includes("api.weather.gov")) return new Response(JSON.stringify({ features: [] }));
-  if (text.includes("texasattorneygeneral.gov"))
-    return new Response('<div class="m-b-3"><h4><a href="/news/x">AG release</a></h4><p class="meta m-b-0">October 28, 2026 |</p></div>');
-  if (text.includes("txdot.gov"))
-    return new Response('<a class="cmp-list__item-link" href="/news/y"><span class="cmp-list__item-title">Road work</span></a>');
-  return new Response(rssFor());
-};
+globalThis.fetch = async () => new Response(rssFor());
 
-const { default: worker, refresh } = await import("../worker.js");
+const { refreshSource } = await import("../worker.js");
+const rssSource = SOURCES.find((s) => s.type === "rss" || (!s.type && s.url));
 
-test("a run is bounded by the CPU-cost budget and light sources are batched", () => {
-  const picked = pickDue(SOURCES, emptyState(), Date.now());
-  const cost = picked.reduce((sum, source) => sum + (source.cost || 1), 0);
-  assert.ok(picked.length >= 1);
-  assert.ok(cost <= RUN_BUDGET || picked.length === 1);
-  assert.ok(picked.length < SOURCES.length, "not everything in one run");
-  assert.ok(picked.length > 2, "light sources are batched, fewer runs means fewer KV writes");
+test("the fixed schedule gives every source its slots and never two sources one tick", () => {
+  const schedule = buildSchedule(SOURCES);
+  assert.equal(schedule.length, CYCLE_SLOTS);
+  for (const source of SOURCES) {
+    const slots = schedule.filter((id) => id === source.id).length;
+    assert.equal(slots, (CYCLE_SLOTS * 2) / source.refreshMinutes, `${source.id} runs on its interval`);
+  }
 });
 
-test("the heaviest source can never be starved by the budget", () => {
-  const heavy = SOURCES.reduce((a, b) => ((b.cost || 1) > (a.cost || 1) ? b : a));
-  const state = applyOutcomes(
-    emptyState(),
-    SOURCES,
-    Object.fromEntries(SOURCES.filter((s) => s.id !== heavy.id).map((s) => [s.id, { ok: true, items: [] }])),
-    Date.now(),
-  );
-  assert.deepEqual(pickDue(SOURCES, state, Date.now()).map((s) => s.id), [heavy.id]);
+test("the schedule is decided by the clock alone, so a tick reads no saved state", () => {
+  const schedule = buildSchedule(SOURCES);
+  const base = Date.UTC(2026, 9, 30, 12, 0, 0);
+  const seen = new Set();
+  for (let i = 0; i < CYCLE_SLOTS; i += 1) seen.add(sourceIdForTime(schedule, base + i * 120_000));
+  seen.delete(null);
+  assert.equal(seen.size, SOURCES.length, "every source comes up within one 4-hour cycle");
 });
 
-test("unchanged content does not rewrite the snapshot; changed content does", async () => {
-  const env = { NEWS_KV: fakeKv() };
+test("unchanged content costs one read and no write within the hour; changed content writes", async () => {
+  const kv = fakeKv();
+  const env = { NEWS_KV: kv };
+  const t = Date.now();
 
-  await refresh(env, { force: true });
-  assert.equal(env.NEWS_KV.writesByKey["news-snapshot-v3"], 1, "first publish");
-  assert.equal(env.NEWS_KV.writesByKey["news-state-v3"], 1);
+  let result = await refreshSource(env, rssSource, t);
+  assert.equal(result.write, true, "first fetch is saved");
 
-  // Same feeds again: state is written (scheduling), snapshot is not.
-  await refresh(env, { force: true });
-  await refresh(env, { force: true });
-  assert.equal(env.NEWS_KV.writesByKey["news-snapshot-v3"], 1, "no change, no snapshot write");
-  assert.equal(env.NEWS_KV.writesByKey["news-state-v3"], 3);
+  result = await refreshSource(env, rssSource, t + 120_000);
+  assert.equal(result.write, false, "nothing changed, nothing written");
+  assert.equal(kv.writes, 1);
 
-  // A new local story appears: published immediately (local news stays fast).
   feedItems = [...feedItems, { title: "Gatesville ISD names new superintendent", link: "https://www.copperascovetx.gov/b" }];
-  await refresh(env, { force: true });
-  assert.equal(env.NEWS_KV.writesByKey["news-snapshot-v3"], 2, "a new story is published at once");
+  result = await refreshSource(env, rssSource, t + 240_000);
+  assert.equal(result.write, true, "a new story is saved at once");
+  assert.equal(kv.writes, 2);
 });
 
-test("/health reports today's runs and KV writes", async () => {
-  const env = { NEWS_KV: fakeKv() };
-  await refresh(env, { force: true });
-  await refresh(env, { force: true });
-  const response = await worker.fetch(new Request("https://w.example/health"), env, { waitUntil() {} });
-  const body = await response.json();
-  assert.equal(body.today.runs, 2);
-  assert.equal(body.today.kvWrites, 3, "2 state writes + 1 snapshot write");
-  assert.equal(body.today.snapshotWrites, 1);
-});
-
-test("serving a page view costs one KV read and no writes", async () => {
-  const env = { NEWS_KV: fakeKv() };
-  await refresh(env, { force: true });
-  const reads = env.NEWS_KV.reads;
-  const writes = env.NEWS_KV.writes;
-  await worker.fetch(new Request("https://w.example/"), env, { waitUntil() {} });
-  assert.equal(env.NEWS_KV.reads - reads, 1);
-  assert.equal(env.NEWS_KV.writes - writes, 0);
+test("a failed fetch keeps the last good items and is recorded", async () => {
+  const kv = fakeKv();
+  const env = { NEWS_KV: kv };
+  const t = Date.now();
+  await refreshSource(env, rssSource, t);
+  const good = globalThis.fetch;
+  globalThis.fetch = async () => new Response("nope", { status: 500 });
+  try {
+    const result = await refreshSource(env, rssSource, t + 3_600_000 * 2);
+    assert.equal(result.status, "stale");
+    const saved = JSON.parse(await kv.get(`src:${rssSource.id}`));
+    assert.equal(saved.f, 1);
+    assert.ok(saved.items.length > 0, "last good items survive");
+    assert.ok(saved.t, "last confirmed time is kept");
+  } finally {
+    globalThis.fetch = good;
+  }
 });

@@ -370,7 +370,8 @@ function showLoadError() {
 async function loadHeadlines() {
   try {
     let snapshot = await fetchJson(RSS_WORKER_URL);
-    if (snapshot && snapshot.schema !== 2) snapshot = logic.adaptLegacySnapshot(snapshot);
+    if (snapshot && snapshot.schema === 3) snapshot = window.FeedBuild.build(snapshot, Date.now());
+    else if (snapshot && snapshot.schema !== 2) snapshot = logic.adaptLegacySnapshot(snapshot);
     if (!snapshot || snapshot.schema !== 2) throw new Error("Unexpected response");
     writeSaved(snapshot);
     showSnapshot(snapshot, { fromSavedCopy: false });
