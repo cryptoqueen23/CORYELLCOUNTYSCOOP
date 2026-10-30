@@ -183,7 +183,14 @@ function renderStory(story, now) {
   const article = el("article", `story story-${story.kind}`);
 
   const meta = el("p", "story-meta");
-  meta.append(el("span", `story-kind kind-${story.kind}`, story.kind === "official" ? "Official announcement" : "News report"));
+  const kindLabels = {
+    official: "Government announcement",
+    news: "News report",
+    // Reserved for the Scoop's own investigations; never produced by the automatic feed.
+    scoop: "Coryell County Scoop original reporting",
+  };
+  meta.append(el("span", `story-kind kind-${story.kind}`, kindLabels[story.kind] || kindLabels.news));
+  if (story.kind === "official") meta.append(el("span", "story-kind-note", "From the agency, not independent reporting"));
   meta.append(el("span", "story-publisher", story.publisher));
 
   const time = el("time", "story-date", logic.dateLabel(story, now));

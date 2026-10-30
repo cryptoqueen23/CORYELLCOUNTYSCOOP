@@ -32,10 +32,9 @@ export function prepareItem(raw, source) {
   const title = stripPublisherSuffix(raw.title, raw.publisher);
   if (isBlocked(title, publisher)) return null;
 
-  // Place names in the description or in the link's path ("/copperas-cove/...") count when the
-  // headline names none. Both are already in hand, so this costs one more regex pass per item.
-  const context = `${raw.summary || ""} ${linkWords(raw.link)}`;
-  const location = locate(title, source, raw.publisher, context);
+  // When the headline names no place, the description (and link path, as corroboration only)
+  // may show the story is about one; see aboutPlace() in classify.js.
+  const location = locate(title, source, raw.publisher, { summary: raw.summary || "", linkText: linkWords(raw.link) });
   return {
     title,
     link: raw.link,

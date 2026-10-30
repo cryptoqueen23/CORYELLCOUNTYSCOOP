@@ -66,13 +66,42 @@ function sortByLocality(list) {
   return [...new Set(list)].sort((a, b) => rank(a) - rank(b));
 }
 
+// Evidence that a story is about a place, not merely mentions it ("Sgt. Lee, a Temple native").
+// Accepted, from the description: a dateline ("COPPERAS COVE, Texas -"), the place leading an
+// institution ("Gatesville ISD", "Killeen police"), or a location preposition ("in Killeen").
+// "from"/"of"/"native of" are deliberately not cues: they name a hometown, not the event.
+// A place in the link path only corroborates a description mention; it never qualifies alone.
+const INSTITUTIONS =
+  "city council|council|city hall|police department|police|pd|isd|school board|schools?|sheriff|fire department|fire|firefighters|officials|residents|mayor|commissioners|hospital|high school|library|city";
+const CUE_PATTERNS = Object.fromEntries(
+  Object.entries(LOCATION_TERMS).map(([id, terms]) => {
+    const place = `(?:${terms.join("|")})`;
+    return [
+      id,
+      {
+        strong: new RegExp(
+          String.raw`^\s*${place}\s*(?:,\s*(?:tx|texas)\b|\(|[—–-])|\b${place}\s+(?:${INSTITUTIONS})\b|\b(?:in|at|near|across|throughout)\s+(?:the\s+)?(?:city of\s+)?${place}(?![\w])`,
+          "i",
+        ),
+      },
+    ];
+  }),
+);
+
+export function aboutPlace(id, summary, linkText) {
+  if (!CUE_PATTERNS[id]) return false; // "texas" has no town terms
+  if (summary && CUE_PATTERNS[id]?.strong.test(summary)) return true;
+  return Boolean(summary && linkText && LOCATION_PATTERNS[id].test(summary) && LOCATION_PATTERNS[id].test(linkText));
+}
+
 // Returns { locations: [...most local first], basis }.
 //  - title:     a place name appears in the headline (strongest signal)
 //  - publisher: a hyper-local outlet published it
 //  - search:    only the search query that found it mentions the place (weak)
 //  - source:    nothing in the story itself; falls back to the source's coverage area
-//  - context:   no place in the headline, but the description or link names one (weaker)
-export function locate(title, source, publisher = "", context = "") {
+//  - context:   no place in the headline, but the description shows the story is ABOUT the place
+//               (see aboutPlace); a bare mention is not enough
+export function locate(title, source, publisher = "", { summary = "", linkText = "" } = {}) {
   const found = LOCATION_ORDER.filter((id) => LOCATION_PATTERNS[id]?.test(title));
 
   if (source.localOfficial) {
@@ -87,8 +116,8 @@ export function locate(title, source, publisher = "", context = "") {
   }
 
   const outlet = localPublisher(publisher);
-  if (!outlet && context) {
-    const inContext = LOCATION_ORDER.filter((id) => LOCATION_PATTERNS[id]?.test(context));
+  if (!outlet && (summary || linkText)) {
+    const inContext = LOCATION_ORDER.filter((id) => aboutPlace(id, summary, linkText));
     if (inContext.length) return { locations: sortByLocality([...inContext, "texas"]), basis: "context" };
   }
   if (outlet) return { locations: [outlet.location, "texas"].filter(unique), basis: "publisher" };

@@ -332,10 +332,46 @@ test("a regional story whose headline omits the town but whose description names
   assert.equal(item.locationBasis, "context");
 });
 
-test("a place in the link path counts when headline and description name none", async () => {
+test("a place in the link path alone never makes a story local", async () => {
   const { prepareItem } = await import("../lib/ingest.js");
   const fox = { id: "fox44", name: "KWKT Fox 44", kind: "news", scope: "central-texas" };
-  const item = prepareItem({ title: "Water main break closes road", link: "https://www.fox44news.com/news/gatesville/water-main-break", pubDate: null }, fox);
+  const item = prepareItem({ title: "Water main break closes road", link: "https://www.fox44news.com/news/gatesville/water-main-break", summary: "", pubDate: null }, fox);
+  assert.equal(item.location, "texas");
+});
+
+test("a bare description mention is not enough: hometowns and incidental places stay statewide", async () => {
+  const { prepareItem } = await import("../lib/ingest.js");
+  const fox = { id: "fox44", name: "KWKT Fox 44", kind: "news", scope: "central-texas" };
+  const cases = [
+    "Sgt. Lee, a Temple native, was promoted to colonel in Austin on Friday.",
+    "The suspect, originally from Killeen, was arrested in Houston.",
+    "Gatesville is among the cities that applied for the state grant.",
+  ];
+  for (const summary of cases) {
+    const item = prepareItem({ title: "State announces new program", link: "https://www.fox44news.com/news/x", summary, pubDate: null }, fox);
+    assert.equal(item.location, "texas", summary);
+  }
+});
+
+test("a dateline or an institution or a location preposition shows the story is about the place", async () => {
+  const { prepareItem } = await import("../lib/ingest.js");
+  const fox = { id: "fox44", name: "KWKT Fox 44", kind: "news", scope: "central-texas" };
+  const cases = [
+    ["GATESVILLE, Texas - The county jail will close Friday.", "gatesville"],
+    ["Harker Heights police are asking for help finding the driver.", "central-texas"],
+    ["Crews are working on a water main in Copperas Cove.", "copperas-cove"],
+  ];
+  for (const [summary, place] of cases) {
+    const item = prepareItem({ title: "Road closure announced", link: "https://www.fox44news.com/news/x", summary, pubDate: null }, fox);
+    assert.equal(item.location, place, summary);
+    assert.equal(item.locationBasis, "context");
+  }
+});
+
+test("link path corroborates a description mention", async () => {
+  const { prepareItem } = await import("../lib/ingest.js");
+  const fox = { id: "fox44", name: "KWKT Fox 44", kind: "news", scope: "central-texas" };
+  const item = prepareItem({ title: "Budget talks continue", link: "https://www.fox44news.com/news/gatesville/budget", summary: "Gatesville leaders met again Monday.", pubDate: null }, fox);
   assert.equal(item.location, "gatesville");
 });
 

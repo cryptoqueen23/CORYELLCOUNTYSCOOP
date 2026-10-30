@@ -758,6 +758,9 @@ h1, h2, h3 { overflow-wrap: anywhere; }
 
 .story-kind { font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--navy); }
 .kind-official { color: var(--red); }
+.kind-scoop { color: var(--navy); }
+.story-scoop { border-left-color: var(--navy); border-left-style: double; }
+.story-kind-note { font-style: italic; }
 .story-publisher { font-weight: 700; color: var(--ink); }
 .story-stale { padding: 0 6px; border: 1px solid var(--border); border-radius: 4px; }
 
