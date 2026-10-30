@@ -350,7 +350,7 @@ function showSnapshot(snapshot, { fromSavedCopy }) {
   let message = "";
   if (fromSavedCopy) {
     message = "We could not reach the news service, so this is a saved copy from your last visit. Stories may be out of date.";
-  } else if (ageMinutes > STALE_SNAPSHOT_MINUTES) {
+  } else if (ageMinutes > (snapshot.staleAfterMinutes || STALE_SNAPSHOT_MINUTES)) {
     message = "The news service has not refreshed recently. These stories were last gathered " + logic.ageText(snapshot.generatedAt, now) + ".";
   }
   notice.textContent = message;

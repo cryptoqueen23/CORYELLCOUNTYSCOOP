@@ -18,7 +18,7 @@
 import { runSource } from "./lib/fetchers.js";
 import { assembleFeedText, healthFromFeed, metaPrefixes } from "./lib/feed.js";
 import { ingest, savedValidators } from "./lib/ingest.js";
-import { buildSchedule, sourceIdForTime } from "./lib/schedule.js";
+import { buildSchedule, sourceIdForTime, TICK_MINUTES } from "./lib/schedule.js";
 import { SOURCES } from "./lib/sources.js";
 
 const ALLOWED_ORIGINS = new Set([
@@ -35,9 +35,45 @@ const SOURCE_BY_ID = new Map(SOURCES.map((source) => [source.id, source]));
 const PREFIXES = metaPrefixes(SOURCES);
 const RECORD_KEY = (id) => `src:${id}`;
 const FEED_CACHE_SECONDS = 300;
+const TICK_KEY = "meta:lastTick";
+// One scheduler marker per hour (24 KV writes a day). 30 ticks of 2 minutes.
+const HEARTBEAT_EVERY_TICKS = 30;
+const validJson = (text) => {
+  try {
+    return text && JSON.parse(text) && text;
+  } catch {
+    return null;
+  }
+};
 const feedCacheKey = () => new Request("https://cache.invalid/feed-v3");
 
 // Fetch one source and save its record if it changed. Never throws.
+// HEARTBEAT="0" (test Worker only) turns the hourly scheduler marker off while other things are measured.
+const isHeartbeatTick = (env, scheduledTime) =>
+  env.HEARTBEAT !== "0" && Math.floor(scheduledTime / (TICK_MINUTES * 60_000)) % HEARTBEAT_EVERY_TICKS === 0;
+
+// One scheduled tick: refresh the tick's source (if any), then once an hour record that the scheduler ran.
+// The marker says only that THIS execution completed and how this tick's one source went; it never
+// claims that other sources were fetched (per-source health comes from their own records).
+export async function runTick(env, id, scheduledTime) {
+  let status = "idle";
+  let error;
+  if (id) {
+    try {
+      status = (await refreshSource(env, SOURCE_BY_ID.get(id), scheduledTime)).status;
+    } catch (caught) {
+      status = "error";
+      error = String(caught && caught.message ? caught.message : caught).slice(0, 160);
+      console.log(JSON.stringify({ src: id, status, error }));
+    }
+  }
+  if (isHeartbeatTick(env, scheduledTime)) {
+    const marker = { t: new Date(scheduledTime).toISOString(), src: id || null, status };
+    if (error) marker.error = error;
+    await env.NEWS_KV.put(TICK_KEY, JSON.stringify(marker));
+  }
+}
+
 export async function refreshSource(env, source, now = Date.now()) {
   // CLASSIFY_CONTEXT="0" (test Worker only) turns off description/link location evidence.
   const options = { context: env.CLASSIFY_CONTEXT !== "0" };
@@ -80,9 +116,12 @@ async function loadFeedText(env, ctx) {
   const hit = await cache.match(feedCacheKey());
   if (hit) return hit.text();
 
-  const texts = await Promise.all(SOURCES.map((source) => env.NEWS_KV.get(RECORD_KEY(source.id), "text")));
+  const [tickText, ...texts] = await Promise.all([
+    env.NEWS_KV.get(TICK_KEY, "text"),
+    ...SOURCES.map((source) => env.NEWS_KV.get(RECORD_KEY(source.id), "text")),
+  ]);
   const records = Object.fromEntries(SOURCES.map((source, index) => [source.id, texts[index]]));
-  const text = assembleFeedText(records, SOURCES, PREFIXES, Date.now());
+  const text = assembleFeedText(records, SOURCES, PREFIXES, Date.now(), validJson(tickText));
 
   ctx.waitUntil(
     cache.put(
@@ -105,7 +144,7 @@ export default {
     if (!env.NEWS_KV) return json({ error: "Storage is not configured" }, origin, 503);
 
     const text = await loadFeedText(env, ctx);
-    if (path === "/health") return json(healthFromFeed(JSON.parse(text)), origin);
+    if (path === "/health") return json(healthFromFeed(JSON.parse(text), Date.now()), origin);
     return respond(text, origin);
   },
 
@@ -115,7 +154,7 @@ export default {
       return;
     }
     const id = sourceIdForTime(env.TEST_SAMPLING === "fast" ? FAST_SCHEDULE : SCHEDULE, event.scheduledTime);
-    if (!id) return; // idle tick
-    ctx.waitUntil(refreshSource(env, SOURCE_BY_ID.get(id), event.scheduledTime));
+    if (!id && !isHeartbeatTick(env, event.scheduledTime)) return; // idle tick: nothing to do
+    ctx.waitUntil(runTick(env, id, event.scheduledTime));
   },
 };

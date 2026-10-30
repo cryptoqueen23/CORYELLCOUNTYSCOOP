@@ -2,7 +2,7 @@
 // Nothing is parsed, sorted or rebuilt on the server: the browser applies freshness
 // limits, ranking and de-duplication to the records it receives (news-logic.js).
 
-import { statusOf } from "./ingest.js";
+import { summarize } from "./health.js";
 
 // Static per-source metadata, serialized once when the Worker starts.
 export function metaPrefixes(sources) {
@@ -22,31 +22,14 @@ export function metaPrefixes(sources) {
 }
 
 // records: { sourceId: recordText | null }
-export function assembleFeedText(records, sources, prefixes, now) {
+// `tickText` is the saved hourly scheduler marker (JSON text) or null; it rides along so the page can tell
+// when the cron stopped, instead of trusting `generatedAt`, which is only when this response was assembled.
+export function assembleFeedText(records, sources, prefixes, now, tickText = null) {
   const parts = sources.map((source) => `${prefixes[source.id]},"rec":${records[source.id] || "null"}}`);
-  return `{"schema":3,"generatedAt":"${new Date(now).toISOString()}","sources":[${parts.join(",")}]}`;
+  return `{"schema":3,"generatedAt":"${new Date(now).toISOString()}","tick":${tickText || "null"},"sources":[${parts.join(",")}]}`;
 }
 
-// Compact health summary for /health (parses the feed, so it is only used on demand).
-export function healthFromFeed(feed) {
-  const health = feed.sources.map((source) => {
-    const rec = source.rec;
-    if (!rec) return { id: source.id, name: source.name, kind: source.kind, status: "pending", items: 0 };
-    return {
-      id: source.id,
-      name: source.name,
-      kind: source.kind,
-      status: statusOf(rec.f),
-      lastConfirmed: rec.t,
-      consecutiveFailures: rec.f,
-      lastError: rec.e,
-      items: rec.items.length,
-    };
-  });
-  return {
-    generatedAt: feed.generatedAt,
-    sourcesOk: health.filter((entry) => entry.status === "ok").length,
-    sourcesTotal: health.length,
-    health,
-  };
+// Health summary for /health (parses the feed, so it is only used on demand). See lib/health.js.
+export function healthFromFeed(feed, now = Date.now()) {
+  return summarize(feed, now);
 }

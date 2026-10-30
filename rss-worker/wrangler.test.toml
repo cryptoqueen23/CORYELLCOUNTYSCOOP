@@ -19,6 +19,7 @@ crons = ["*/2 * * * *"]
 [vars]
 TEST_SAMPLING = "fast"
 CLASSIFY_CONTEXT = "0"
+HEARTBEAT = "0"
 
 [observability]
 enabled = true

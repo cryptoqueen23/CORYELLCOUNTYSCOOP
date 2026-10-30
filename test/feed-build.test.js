@@ -65,3 +65,20 @@ test("expired weather alerts disappear", () => {
   const out = build(feed([Object.assign({}, s, { rec: rec([item("Flood warning", { expires: hoursAgo(1) })]) })]), NOW);
   assert.equal(out.stories.length, 0);
 });
+
+test("'updated' is when the service last ran, not when the response was assembled (an outage must show)", () => {
+  const s = Object.assign(source("a"), { rec: Object.assign(rec([item("Story")]), { t: hoursAgo(6) }) });
+  const out = build(Object.assign(feed([s]), { tick: { t: hoursAgo(5), status: "ok" } }), NOW);
+  assert.equal(out.generatedAt, hoursAgo(5), "scheduler marker wins");
+  assert.equal(out.staleAfterMinutes, 150);
+  const noTick = build(feed([s]), NOW);
+  assert.equal(noTick.generatedAt, hoursAgo(6), "falls back to the newest source confirmation");
+  assert.notEqual(noTick.generatedAt, feed([s]).generatedAt, "never the assembly time while a confirmation exists");
+});
+
+test("during an outage the last good stories keep their original dates and are not made to look new", () => {
+  const s = Object.assign(source("a"), { rec: Object.assign(rec([item("Story", { pubDate: hoursAgo(30) })]), { t: hoursAgo(20) }) });
+  const out = build(Object.assign(feed([s]), { tick: { t: hoursAgo(20), status: "ok" } }), NOW);
+  assert.equal(out.stories[0].pubDate, hoursAgo(30));
+  assert.equal(out.stories[0].title, "Story");
+});

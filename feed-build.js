@@ -164,9 +164,21 @@
     candidates.sort(function (a, b) {
       return b.score - a.score || timeOf(b) - timeOf(a);
     });
+    // "Updated" must mean when the news service last RAN, not when this response was assembled (that is
+    // always "now", which would hide an outage). Prefer the scheduler's hourly marker; otherwise the newest
+    // source confirmation; the assembly time only if neither exists yet.
+    var newestConfirmed = 0;
+    feed.sources.forEach(function (source) {
+      var t = source.rec && source.rec.t ? Date.parse(source.rec.t) : 0;
+      if (t > newestConfirmed) newestConfirmed = t;
+    });
+    var tick = feed.tick && feed.tick.t ? Date.parse(feed.tick.t) : 0;
+    var refreshed = tick || newestConfirmed;
     return {
       schema: 2,
-      generatedAt: feed.generatedAt,
+      generatedAt: refreshed ? new Date(refreshed).toISOString() : feed.generatedAt,
+      // The marker is hourly and unchanged sources are re-confirmed hourly, so allow 2.5 hours.
+      staleAfterMinutes: 150,
       stories: dedupe(candidates).slice(0, MAX_STORIES),
       health: health,
       sourcesOk: health.filter(function (h) {
