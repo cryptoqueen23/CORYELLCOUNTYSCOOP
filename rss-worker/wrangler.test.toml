@@ -20,4 +20,4 @@ enabled = true
 
 [[kv_namespaces]]
 binding = "NEWS_KV"
-id = "LOCAL_TEST_PLACEHOLDER"
+id = "PASTE_TEST_KV_ID_HERE"

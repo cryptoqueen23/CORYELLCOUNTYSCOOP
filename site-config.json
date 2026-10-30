@@ -49,6 +49,10 @@
       "cta": "See your options"
     },
     "disclosure": "Insurance products and services are offered through Phoenix Securitas Premium. Marimer Cruz-Nieves is a licensed insurance agent (NPN: 21566471) in the states of Texas, Florida, Ohio, and New York, regulated by the respective state department of insurance in each licensed state. The information on this website is for educational purposes only and does not constitute legal, tax, investment, or financial advice. Product availability, rates, and benefits vary by carrier, state, and individual circumstances. Enrollment in any plan is subject to eligibility requirements and policy terms and conditions. For Medicare products, we do not offer every plan available in your area. Please contact Medicare.gov or 1-800-MEDICARE for information on all available plans.",
-    "disclosureSource": "Wording copied from phoenixsecuritas.com (legal page and home page footer) on 2026-10-29. Keep it in step with that site."
+    "disclosureSource": "Wording copied from phoenixsecuritas.com (legal page and home page footer) on 2026-10-29. Keep it in step with that site.",
+    "verify": {
+      "label": "Verify the license with the Texas Department of Insurance",
+      "url": "https://www.tdi.texas.gov/agent/agent-lookup.html"
+    }
   }
 }

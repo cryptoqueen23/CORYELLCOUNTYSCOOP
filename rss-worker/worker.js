@@ -102,6 +102,9 @@ async function runRefresh(env, { force = false } = {}) {
   const heartbeatDue = now - Date.parse(field(previous, "generatedAt") || 0) > HEARTBEAT_MS;
   const publish = !previous || changed || heartbeatDue;
 
+  // One short log line per run: which sources were fetched and whether a snapshot was published.
+  const failed = due.filter((source) => !outcomes[source.id].ok).map((source) => `${source.id}: ${outcomes[source.id].error}`);
+  console.log(JSON.stringify({ run: due.map((source) => source.id), publish, failed }));
   bumpStats(nextState, now, publish ? 2 : 1);
   await store.putText(env, STATE_KEY, JSON.stringify(nextState));
   if (publish) await store.putText(env, SNAPSHOT_KEY, JSON.stringify(snapshot));

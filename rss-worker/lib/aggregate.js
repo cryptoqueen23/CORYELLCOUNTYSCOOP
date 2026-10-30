@@ -23,7 +23,7 @@ const LOCATION_WEIGHT = {
 // the few most overdue sources; the rest wait for the next cron run.
 // A run fetches overdue sources until this many cost units are used (see `cost` in
 // sources.js). Light sources batch together; heavy ones run nearly alone.
-export const RUN_BUDGET = 5;
+export const RUN_BUDGET = 3;
 
 export function emptyState() {
   return { sources: {}, firstSeen: {} };
@@ -84,7 +84,8 @@ export function prepareItem(raw, source) {
     publisher,
     pubDate: raw.pubDate || null,
     expires: raw.expires || null,
-    summary: raw.summary && !/^https?:/.test(raw.summary) ? raw.summary : "",
+    // Summaries are only shown for official announcements; skipping the rest keeps state small.
+    summary: source.kind === "official" && raw.summary && !/^https?:/.test(raw.summary) ? raw.summary : "",
     location: location.locations[0],
     locations: location.locations,
     locationBasis: location.basis,
@@ -121,7 +122,12 @@ export function applyOutcomes(state, sources, outcomes, now) {
 
     next.sources[source.id] = outcome.ok
       ? {
-          items: outcome.items.map((raw) => prepareItem(raw, source)).filter((item) => item && !tooOld(item, source, now)),
+          items: outcome.items
+            .map((raw) => prepareItem(raw, source))
+            .filter((item) => item && !tooOld(item, source, now))
+            // Only `cap` items per source are ever shown, so only that many are kept (newest first).
+            .sort((a, b) => (b.pubDate ? Date.parse(b.pubDate) : 0) - (a.pubDate ? Date.parse(a.pubDate) : 0))
+            .slice(0, source.cap),
           lastAttempt: nowIso,
           lastSuccess: nowIso,
           consecutiveFailures: 0,

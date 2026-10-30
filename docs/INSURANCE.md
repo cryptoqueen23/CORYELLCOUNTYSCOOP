@@ -60,9 +60,12 @@ republishes). You can change every label, description and link, or set
 
 ## Open items for Mari
 
-- The NIPR license-lookup link (`pnc.nipr.com`) that Phoenix Securitas uses could not
-  be loaded from the machine used for testing, so it was not added. The license
-  numbers are shown as text. Add a link in the section if you want one.
+- Licence verification: NIPR offers no public consumer lookup that takes an NPN in a link (its
+  Producer Report is for businesses), and the old `pnc.nipr.com` address does not exist. The official
+  consumer route is the state insurance department. The site now links to the Texas Department of
+  Insurance agent lookup (https://www.tdi.texas.gov/agent/agent-lookup.html, confirmed live and official).
+  phoenixsecuritas.com still carries the dead `pnc.nipr.com` link; that site is not part of this repo
+  and was not changed.
 - The "Explore Life" and "Explore Health" buttons both go to the Phoenix Securitas
   products section today. If Phoenix Securitas gets separate life and health pages,
   change the two `url` values in `site-config.json`.

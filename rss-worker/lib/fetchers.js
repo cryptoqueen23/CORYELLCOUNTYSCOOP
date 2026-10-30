@@ -54,7 +54,7 @@ async function fetchOnce(url, accept, headChars = MAX_BYTES) {
 
     // A redirect may only land on another approved host.
     if (response.url && !isAllowedHost(new URL(response.url).hostname)) {
-      throw new FetchError(`redirected to unapproved host`, false);
+      throw new FetchError(`redirected to unapproved host ${new URL(response.url).hostname}`, false);
     }
     if (!response.ok) {
       throw new FetchError(`HTTP ${response.status}`, response.status >= 500);
