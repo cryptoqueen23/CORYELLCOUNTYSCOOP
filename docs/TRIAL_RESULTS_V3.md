@@ -1,7 +1,7 @@
 # CPU and reliability trial, schema 3 Worker (2026-10-30)
 
 Test Worker `coryell-county-rss-test`, own KV namespace `NEWS_KV_TEST`, version `72b91937`
-(the branch as of commit `ed...` before the classification changes). Production, Vercel, DNS and
+(the branch as of commit `267625c`, before any classification changes). Production, Vercel, DNS and
 `main` were not touched. Tail recorded 17:30-18:52 UTC (42 scheduled ticks, 31 fetching runs, 11 idle,
 0 missed ticks); source health read again at 22:09 UTC.
 
