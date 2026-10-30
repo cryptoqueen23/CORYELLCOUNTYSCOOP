@@ -320,3 +320,30 @@ test("tracking parameters are removed from links so unchanged feeds look unchang
   assert.equal(safeUrl("https://www.kwtx.com/a/?utm_source=x&id=7&fbclid=abc"), "https://www.kwtx.com/a/?id=7");
   assert.equal(safeUrl("https://www.kwtx.com/a/?utm_source=x"), "https://www.kwtx.com/a/");
 });
+
+test("a regional story whose headline omits the town but whose description names it is local", async () => {
+  const { prepareItem } = await import("../lib/ingest.js");
+  const fox = { id: "fox44", name: "KWKT Fox 44", kind: "news", scope: "central-texas" };
+  const item = prepareItem(
+    { title: "Council approves new sidewalk plan", link: "https://www.fox44news.com/news/a", summary: "The Copperas Cove City Council voted Tuesday to fund sidewalks.", pubDate: "2026-10-30T12:00:00.000Z" },
+    fox,
+  );
+  assert.equal(item.location, "copperas-cove");
+  assert.equal(item.locationBasis, "context");
+});
+
+test("a place in the link path counts when headline and description name none", async () => {
+  const { prepareItem } = await import("../lib/ingest.js");
+  const fox = { id: "fox44", name: "KWKT Fox 44", kind: "news", scope: "central-texas" };
+  const item = prepareItem({ title: "Water main break closes road", link: "https://www.fox44news.com/news/gatesville/water-main-break", pubDate: null }, fox);
+  assert.equal(item.location, "gatesville");
+});
+
+test("a regional story with no local place anywhere stays statewide, and a headline place outranks context", async () => {
+  const { prepareItem } = await import("../lib/ingest.js");
+  const fox = { id: "fox44", name: "KWKT Fox 44", kind: "news", scope: "central-texas" };
+  const none = prepareItem({ title: "College Station Animal Control seeking dog", link: "https://www.fox44news.com/news/a", summary: "Brazos County deputies say the dog was found Monday.", pubDate: null }, fox);
+  assert.equal(none.location, "texas");
+  const both = prepareItem({ title: "Killeen crash closes highway", link: "https://www.fox44news.com/news/b", summary: "Near Copperas Cove.", pubDate: null }, fox);
+  assert.equal(both.locationBasis, "title");
+});

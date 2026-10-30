@@ -17,6 +17,14 @@ export function statusOf(failures) {
   return failures >= FAILING_AFTER ? "failing" : failures > 0 ? "stale" : "ok";
 }
 
+function linkWords(link) {
+  try {
+    return new URL(link).pathname.replace(/[-_/]+/g, " ");
+  } catch {
+    return "";
+  }
+}
+
 // Everything about an item that does not change with time (place, topics,
 // cleaned title) is worked out once, here.
 export function prepareItem(raw, source) {
@@ -24,7 +32,10 @@ export function prepareItem(raw, source) {
   const title = stripPublisherSuffix(raw.title, raw.publisher);
   if (isBlocked(title, publisher)) return null;
 
-  const location = locate(title, source, raw.publisher);
+  // Place names in the description or in the link's path ("/copperas-cove/...") count when the
+  // headline names none. Both are already in hand, so this costs one more regex pass per item.
+  const context = `${raw.summary || ""} ${linkWords(raw.link)}`;
+  const location = locate(title, source, raw.publisher, context);
   return {
     title,
     link: raw.link,

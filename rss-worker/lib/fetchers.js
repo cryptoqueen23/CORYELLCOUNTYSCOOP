@@ -89,7 +89,7 @@ async function fetchRss(source, now) {
   // and keeps parsing within the free-plan CPU budget.
   // Only about `cap` items are ever kept, so only that many (plus a few spares for
   // blocked or too-old items) are parsed. Summaries are shown for official items only.
-  const items = parseFeed(xml, { maxItems: (source.cap || 15) + 5, now, summaries: source.kind === "official" });
+  const items = parseFeed(xml, { maxItems: (source.cap || 15) + 5, now, summaries: true });
   if (!items.length && !/<(rss|feed|rdf)[\s>]/i.test(xml)) {
     throw new FetchError("response was not a feed", false);
   }

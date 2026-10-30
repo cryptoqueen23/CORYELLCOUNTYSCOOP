@@ -85,6 +85,7 @@
     if (story.locationBasis === "title") points += 10;
     if (story.locationBasis === "search") points -= 10;
     if (story.locationBasis === "publisher") points += 6;
+    if (story.locationBasis === "context") points += 4;
     if (story.kind === "official") points += 8;
     var time = story.pubDate ? Date.parse(story.pubDate) : 0;
     if (time) points += Math.max(0, 40 - Math.max(0, (now - time) / HOUR) / 6);

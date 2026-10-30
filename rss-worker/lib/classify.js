@@ -71,7 +71,8 @@ function sortByLocality(list) {
 //  - publisher: a hyper-local outlet published it
 //  - search:    only the search query that found it mentions the place (weak)
 //  - source:    nothing in the story itself; falls back to the source's coverage area
-export function locate(title, source, publisher = "") {
+//  - context:   no place in the headline, but the description or link names one (weaker)
+export function locate(title, source, publisher = "", context = "") {
   const found = LOCATION_ORDER.filter((id) => LOCATION_PATTERNS[id]?.test(title));
 
   if (source.localOfficial) {
@@ -86,6 +87,10 @@ export function locate(title, source, publisher = "") {
   }
 
   const outlet = localPublisher(publisher);
+  if (!outlet && context) {
+    const inContext = LOCATION_ORDER.filter((id) => LOCATION_PATTERNS[id]?.test(context));
+    if (inContext.length) return { locations: sortByLocality([...inContext, "texas"]), basis: "context" };
+  }
   if (outlet) return { locations: [outlet.location, "texas"].filter(unique), basis: "publisher" };
   if (source.hint) return { locations: [source.hint, "texas"].filter(unique), basis: "search" };
   // A regional outlet is trusted as a source, but its coverage area is not the event's location:
