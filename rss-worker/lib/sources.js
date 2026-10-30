@@ -131,6 +131,7 @@ export const SOURCES = [
     fetcher: "rss",
     url: "https://www.lampasasdispatchrecord.com/rss.xml",
     scope: "central-texas",
+    localOutlet: true,
     refreshMinutes: 120,
     maxAgeDays: 14,
     cap: 8,

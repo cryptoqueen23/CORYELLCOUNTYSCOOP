@@ -50,8 +50,9 @@ fully automatic (see `docs/MODERNIZATION.md`).
 - **Never insert feed HTML into the page.** Feed text is reduced to plain text in
   the Worker (`cleanText`) and rendered with `textContent` in the browser.
 - **Outbound fetches are restricted** to hosts in `lib/sources.js`.
-- **Worker and site deploy separately.** Deploy the Worker first. See
-  `docs/MODERNIZATION.md`.
+- **Worker and site deploy separately, as a pair.** The schema 3 Worker breaks
+  the old site, so deploy the SITE first (the new site reads every format), then
+  the Worker; roll back the Worker first. See `docs/COORDINATED_DEPLOY.md`.
 - Previously dropped at the owner's direction: Texas Tribune, KSAT (perceived
   as liberal-leaning). The hand-pinned KSAT story was removed in the 2026-10
   modernization because pinned stories go stale; do not reintroduce manual pins.

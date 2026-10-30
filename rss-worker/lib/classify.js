@@ -88,7 +88,9 @@ export function locate(title, source, publisher = "") {
   const outlet = localPublisher(publisher);
   if (outlet) return { locations: [outlet.location, "texas"].filter(unique), basis: "publisher" };
   if (source.hint) return { locations: [source.hint, "texas"].filter(unique), basis: "search" };
-  return { locations: [source.scope, "texas"].filter(unique), basis: "source" };
+  // A regional outlet is trusted as a source, but its coverage area is not the event's location:
+  // a story with no place named in the headline is statewide, never local by default.
+  return { locations: ["texas"], basis: "source" };
 }
 
 const CATEGORY_TERMS = {

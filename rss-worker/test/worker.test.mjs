@@ -291,3 +291,32 @@ test("every source is https and its host is on the allowlist", () => {
 test("source ids are unique", () => {
   assert.equal(new Set(SOURCES.map((s) => s.id)).size, SOURCES.length);
 });
+
+// ---- geographic classification and link normalization (regression) ----
+
+test("a regional outlet's story with no local place in the headline is statewide, not local", async () => {
+  const { locate } = await import("../lib/classify.js");
+  const fox = { id: "fox44", scope: "central-texas" };
+  const result = locate("College Station Animal Control seeking dog in animal cruelty case", fox, "KWKT Fox 44");
+  assert.deepEqual(result.locations, ["texas"]);
+  assert.equal(result.basis, "source");
+});
+
+test("a regional outlet's story that names Copperas Cove or Killeen keeps that place", async () => {
+  const { locate } = await import("../lib/classify.js");
+  const fox = { id: "fox44", scope: "central-texas" };
+  assert.equal(locate("Copperas Cove council votes on budget", fox, "KWKT Fox 44").locations[0], "copperas-cove");
+  assert.equal(locate("Killeen police investigate crash", fox, "KWKT Fox 44").locations[0], "central-texas");
+});
+
+test("a newspaper whose whole beat is a place stays local without the town in the headline", async () => {
+  const { locate } = await import("../lib/classify.js");
+  const paper = { id: "leader-press", scope: "copperas-cove", localOutlet: true };
+  assert.equal(locate("Council approves new sidewalk plan", paper, "Leader Press").locations[0], "copperas-cove");
+});
+
+test("tracking parameters are removed from links so unchanged feeds look unchanged", async () => {
+  const { safeUrl } = await import("../lib/parse.js");
+  assert.equal(safeUrl("https://www.kwtx.com/a/?utm_source=x&id=7&fbclid=abc"), "https://www.kwtx.com/a/?id=7");
+  assert.equal(safeUrl("https://www.kwtx.com/a/?utm_source=x"), "https://www.kwtx.com/a/");
+});

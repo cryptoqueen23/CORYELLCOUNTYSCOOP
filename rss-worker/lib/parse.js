@@ -52,6 +52,11 @@ export function safeUrl(raw, base) {
     const url = new URL(decodeEntities(String(raw ?? "")).trim(), base);
     if (url.protocol !== "https:" && url.protocol !== "http:") return "";
     if (url.username || url.password) return "";
+    // Tracking parameters change between fetches without the story changing; dropping them
+    // keeps unchanged feeds from looking changed (and costing a KV write) and helps de-duplication.
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(utm_|fbclid$|gclid$|mc_[ce]id$|ref$|cmpid$|ocid$)/i.test(key)) url.searchParams.delete(key);
+    }
     return url.toString();
   } catch {
     return "";
