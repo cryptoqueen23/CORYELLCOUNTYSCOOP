@@ -86,3 +86,86 @@ test("a failed fetch keeps the last good items and is recorded", async () => {
     globalThis.fetch = good;
   }
 });
+
+// ---- conditional requests (CONDITIONAL_FETCH) ----
+
+test("with CONDITIONAL_FETCH on, a 304 skips parsing, writes nothing, and keeps the saved stories", async () => {
+  const kv = fakeKv();
+  const env = { NEWS_KV: kv, CONDITIONAL_FETCH: "1" };
+  const seen = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    seen.push(init.headers);
+    if (init.headers["If-None-Match"] === '"v1"') return new Response(null, { status: 304 });
+    return new Response(rssFor(), { headers: { ETag: '"v1"', "Last-Modified": "Fri, 30 Oct 2026 12:00:00 GMT" } });
+  };
+  try {
+    const t = Date.now();
+    await refreshSource(env, rssSource, t);
+    const saved = JSON.parse(await kv.get(`src:${rssSource.id}`));
+    assert.equal(saved.et, '"v1"');
+    assert.equal(saved.lm, "Fri, 30 Oct 2026 12:00:00 GMT");
+
+    const result = await refreshSource(env, rssSource, t + 120_000);
+    assert.equal(seen.at(-1)["If-None-Match"], '"v1"');
+    assert.equal(seen.at(-1)["If-Modified-Since"], "Fri, 30 Oct 2026 12:00:00 GMT");
+    assert.equal(result.write, false, "not modified, nothing written");
+    assert.equal(result.notModified, true);
+    assert.equal(kv.writes, 1);
+
+    // The hourly confirmation still happens, with the saved stories and validators intact.
+    const hourly = await refreshSource(env, rssSource, t + 3_700_000);
+    assert.equal(hourly.write, true);
+    const after = JSON.parse(await kv.get(`src:${rssSource.id}`));
+    assert.equal(after.items.length, saved.items.length);
+    assert.equal(after.et, '"v1"');
+    assert.ok(Date.parse(after.t) > Date.parse(saved.t));
+  } finally {
+    globalThis.fetch = real;
+  }
+});
+
+test("without CONDITIONAL_FETCH no validators are sent, and a source without ETag still works", async () => {
+  const kv = fakeKv();
+  const seen = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    seen.push(init.headers);
+    return new Response(rssFor());
+  };
+  try {
+    const t = Date.now();
+    await refreshSource({ NEWS_KV: kv }, rssSource, t);
+    await refreshSource({ NEWS_KV: kv }, rssSource, t + 120_000);
+    assert.ok(seen.every((h) => !h["If-None-Match"] && !h["If-Modified-Since"]));
+    seen.length = 0;
+    await refreshSource({ NEWS_KV: kv, CONDITIONAL_FETCH: "1" }, rssSource, t + 240_000);
+    assert.ok(seen.every((h) => !h["If-None-Match"]), "no saved ETag, so nothing to send");
+  } finally {
+    globalThis.fetch = real;
+  }
+});
+
+test("a 304 after a failure counts as a recovery and clears the failure", async () => {
+  const kv = fakeKv();
+  const env = { NEWS_KV: kv, CONDITIONAL_FETCH: "1" };
+  const real = globalThis.fetch;
+  try {
+    const t = Date.now();
+    globalThis.fetch = async () => new Response(rssFor(), { headers: { ETag: '"v1"' } });
+    await refreshSource(env, rssSource, t);
+    globalThis.fetch = async () => new Response("x", { status: 500 });
+    await refreshSource(env, rssSource, t + 3_000_000);
+    assert.equal(JSON.parse(await kv.get(`src:${rssSource.id}`)).f, 1);
+  } finally {
+    globalThis.fetch = real;
+  }
+});
+
+test("saved validators round-trip, including quotes, without parsing the record", async () => {
+  const { savedValidators } = await import("../lib/ingest.js");
+  const text = `{"t":"x","f":0,"e":null,"h":"a","et":"W/\\"abc\\"","lm":"Fri, 30 Oct 2026 12:00:00 GMT","items":[{"title":"\\"et\\":\\"fake\\""}]}`;
+  assert.deepEqual(savedValidators(text), { et: 'W/"abc"', lm: "Fri, 30 Oct 2026 12:00:00 GMT" });
+  assert.equal(savedValidators(null), null);
+  assert.equal(savedValidators('{"t":"x","f":0,"e":null,"h":"a","et":"","lm":"","items":[]}'), null);
+});

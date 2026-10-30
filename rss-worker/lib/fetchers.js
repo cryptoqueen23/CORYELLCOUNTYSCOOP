@@ -36,7 +36,7 @@ class FetchError extends Error {
   }
 }
 
-async function fetchOnce(url, accept, headChars = MAX_BYTES) {
+async function fetchOnce(url, accept, headChars = MAX_BYTES, cond = null) {
   const parsed = new URL(url);
   if (parsed.protocol !== "https:" || !isAllowedHost(parsed.hostname)) {
     throw new FetchError(`blocked host ${parsed.hostname}`, false);
@@ -46,8 +46,13 @@ async function fetchOnce(url, accept, headChars = MAX_BYTES) {
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
+    // Conditional request: if the page has not changed the server answers 304 with no body, and the
+    // download, decoding, parsing and classification are all skipped (see `cond` in runSource).
+    const headers = { "User-Agent": USER_AGENT, Accept: accept };
+    if (cond && cond.sendEt) headers["If-None-Match"] = cond.sendEt;
+    if (cond && cond.sendLm) headers["If-Modified-Since"] = cond.sendLm;
     const response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT, Accept: accept },
+      headers,
       signal: controller.signal,
       redirect: "follow",
     });
@@ -56,8 +61,16 @@ async function fetchOnce(url, accept, headChars = MAX_BYTES) {
     if (response.url && !isAllowedHost(new URL(response.url).hostname)) {
       throw new FetchError(`redirected to unapproved host ${new URL(response.url).hostname}`, false);
     }
+    if (cond && response.status === 304) {
+      cond.notModified = true;
+      return "";
+    }
     if (!response.ok) {
       throw new FetchError(`HTTP ${response.status}`, response.status >= 500);
+    }
+    if (cond) {
+      cond.gotEt = response.headers.get("etag") || "";
+      cond.gotLm = response.headers.get("last-modified") || "";
     }
 
     return await readHead(response, headChars);
@@ -71,20 +84,21 @@ async function fetchOnce(url, accept, headChars = MAX_BYTES) {
 }
 
 // Reasonable timeout plus one retry with backoff for transient failures only.
-export async function fetchText(url, accept = "*/*", headChars = MAX_BYTES) {
+export async function fetchText(url, accept = "*/*", headChars = MAX_BYTES, cond = null) {
   try {
-    return await fetchOnce(url, accept, headChars);
+    return await fetchOnce(url, accept, headChars, cond);
   } catch (error) {
     if (!error.retryable) throw error;
     await sleep(RETRY_DELAY_MS);
-    return fetchOnce(url, accept, headChars);
+    return fetchOnce(url, accept, headChars, cond);
   }
 }
 
 const XML_ACCEPT = "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8";
 
 async function fetchRss(source, now, options = {}) {
-  const xml = await fetchText(source.url, XML_ACCEPT, source.headChars || FEED_HEAD_CHARS);
+  const xml = await fetchText(source.url, XML_ACCEPT, source.headChars || FEED_HEAD_CHARS, options.cond);
+  if (options.cond && options.cond.notModified) return [];
   // Newest items come first in every feed we use; the head of the document is enough
   // and keeps parsing within the free-plan CPU budget.
   // Only about `cap` items are ever kept, so only that many (plus a few spares for
@@ -103,8 +117,10 @@ async function fetchGoogleNews(source, now) {
 }
 
 // City of Gatesville has no RSS; its own site reads this JSON (object keyed by id).
-async function fetchGatesville(source, now) {
-  const data = JSON.parse(await fetchText(source.url, "application/json"));
+async function fetchGatesville(source, now, options = {}) {
+  const body = await fetchText(source.url, "application/json", MAX_BYTES, options.cond);
+  if (options.cond && options.cond.notModified) return [];
+  const data = JSON.parse(body);
   return Object.values(data)
     .filter((item) => item && item.title && item.link)
     .map((item) => ({
@@ -139,8 +155,9 @@ async function fetchTxDot(source) {
 }
 
 // Texas Attorney General press releases: server-rendered with real dates.
-async function fetchAttorneyGeneral(source, now) {
-  const html = await fetchText(source.url, "text/html", source.headChars);
+async function fetchAttorneyGeneral(source, now, options = {}) {
+  const html = await fetchText(source.url, "text/html", source.headChars, options.cond);
+  if (options.cond && options.cond.notModified) return [];
   const blocks = html.match(/<div class="m-b-3">[\s\S]*?<\/div>/g) || [];
   const items = [];
 
@@ -191,9 +208,15 @@ const FETCHERS = {
 // Runs one source; never throws. Errors come back as { ok: false }.
 // `options.summaries` false skips reading RSS descriptions for news sources (they are only needed
 // for description-based location evidence); used to measure what that costs.
+// `options.validators` ({ et, lm } saved from the last full response) turns on conditional requests;
+// the result then says `notModified` (no items were read) or carries the new validators to save.
 export async function runSource(source, now, options = {}) {
+  const v = options.validators;
+  const cond = v ? { sendEt: v.et || "", sendLm: v.lm || "", notModified: false, gotEt: "", gotLm: "" } : null;
   try {
-    return { ok: true, items: await FETCHERS[source.fetcher](source, now, options) };
+    const items = await FETCHERS[source.fetcher](source, now, { ...options, cond });
+    if (cond && cond.notModified) return { ok: true, items: [], notModified: true };
+    return { ok: true, items, validators: cond ? { et: cond.gotEt, lm: cond.gotLm } : undefined };
   } catch (error) {
     return { ok: false, error: String(error.message || error) };
   }

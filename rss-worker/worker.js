@@ -17,7 +17,7 @@
 
 import { runSource } from "./lib/fetchers.js";
 import { assembleFeedText, healthFromFeed, metaPrefixes } from "./lib/feed.js";
-import { ingest } from "./lib/ingest.js";
+import { ingest, savedValidators } from "./lib/ingest.js";
 import { buildSchedule, sourceIdForTime } from "./lib/schedule.js";
 import { SOURCES } from "./lib/sources.js";
 
@@ -42,10 +42,12 @@ export async function refreshSource(env, source, now = Date.now()) {
   // CLASSIFY_CONTEXT="0" (test Worker only) turns off description/link location evidence.
   const options = { context: env.CLASSIFY_CONTEXT !== "0" };
   const previousText = await env.NEWS_KV.get(RECORD_KEY(source.id), "text");
-  const outcome = await runSource(source, now, { summaries: options.context });
+  // CONDITIONAL_FETCH="1" asks the server whether the page changed (ETag / Last-Modified) before downloading it.
+  const validators = env.CONDITIONAL_FETCH === "1" ? savedValidators(previousText) || { et: "", lm: "" } : null;
+  const outcome = await runSource(source, now, { summaries: options.context, validators });
   const result = ingest(previousText, outcome, source, now, options);
   if (result.write) await env.NEWS_KV.put(RECORD_KEY(source.id), result.text);
-  console.log(JSON.stringify({ src: source.id, status: result.status, wrote: result.write, error: outcome.ok ? undefined : outcome.error }));
+  console.log(JSON.stringify({ src: source.id, status: result.status, wrote: result.write, notModified: result.notModified || undefined, error: outcome.ok ? undefined : outcome.error }));
   return result;
 }
 

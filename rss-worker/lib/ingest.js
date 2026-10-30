@@ -62,6 +62,21 @@ export function hashText(text) {
 
 const publishedTime = (item) => (item.pubDate ? Date.parse(item.pubDate) : 0);
 
+// Validators (ETag / Last-Modified) sit before the items so they can be read without parsing the record.
+function serialize(nowIso, hash, items, et, lm, itemsText = JSON.stringify(items)) {
+  const valid = (value) => (value ? JSON.stringify(String(value).slice(0, 200)) : '""');
+  return `{"t":"${nowIso}","f":0,"e":null,"h":"${hash}","et":${valid(et)},"lm":${valid(lm)},"items":${itemsText}}`;
+}
+
+// Cheap read of the saved validators without parsing the whole record.
+export function savedValidators(recordText) {
+  if (!recordText) return null;
+  const head = recordText.slice(0, 600);
+  const et = (head.match(/"et":"((?:[^"\\]|\\.)*)"/) || [])[1];
+  const lm = (head.match(/"lm":"((?:[^"\\]|\\.)*)"/) || [])[1];
+  return et || lm ? { et: et ? JSON.parse(`"${et}"`) : "", lm: lm ? JSON.parse(`"${lm}"`) : "" } : null;
+}
+
 // `previousText` is the saved record (JSON text) or null. Returns
 // { write, text, status } where `text` is only meaningful when `write` is true.
 export function ingest(previousText, outcome, source, now, options = {}) {
@@ -76,6 +91,15 @@ export function ingest(previousText, outcome, source, now, options = {}) {
     // Only worth a write when the visible status changes or the reason does.
     const write = !previous || statusOf(previous.f) !== statusOf(failures) || previous.e !== error;
     return { write, text: write ? JSON.stringify(record) : "", status: statusOf(failures) };
+  }
+
+  if (outcome.notModified && previous) {
+    // The server says nothing changed: keep the saved items, and only rewrite for the hourly confirmation
+    // (or to clear an earlier failure).
+    const recovered = previous.f > 0;
+    const heartbeat = !previous.t || now - Date.parse(previous.t) > HEARTBEAT_MS;
+    const write = recovered || heartbeat;
+    return { write, text: write ? serialize(nowIso, previous.h, previous.items, previous.et, previous.lm) : "", status: "ok", notModified: true };
   }
 
   const firstSeen = new Map(previous ? previous.items.map((item) => [item.link, item.fs]) : []);
@@ -94,9 +118,10 @@ export function ingest(previousText, outcome, source, now, options = {}) {
   const heartbeat = !previous || !previous.t || now - Date.parse(previous.t) > HEARTBEAT_MS;
   const write = changed || recovered || heartbeat;
 
+  const validators = outcome.validators || {};
   return {
     write,
-    text: write ? `{"t":"${nowIso}","f":0,"e":null,"h":"${hash}","items":${itemsText}}` : "",
+    text: write ? serialize(nowIso, hash, null, validators.et, validators.lm, itemsText) : "",
     status: "ok",
   };
 }
