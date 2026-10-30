@@ -383,3 +383,17 @@ test("a regional story with no local place anywhere stays statewide, and a headl
   const both = prepareItem({ title: "Killeen crash closes highway", link: "https://www.fox44news.com/news/b", summary: "Near Copperas Cove.", pubDate: null }, fox);
   assert.equal(both.locationBasis, "title");
 });
+
+test("with context evidence switched off, a description-only place does not localize a story", async () => {
+  const { prepareItem } = await import("../lib/ingest.js");
+  const fox = { id: "fox44", name: "KWKT Fox 44", kind: "news", scope: "central-texas" };
+  const raw = { title: "Road closure announced", link: "https://x.example/a", summary: "GATESVILLE, Texas - The road will close Friday.", pubDate: null };
+  assert.equal(prepareItem(raw, fox).location, "gatesville");
+  assert.equal(prepareItem(raw, fox, { context: false }).location, "texas");
+});
+
+test("no source depends on Google News or The Texan any more", async () => {
+  const { SOURCES } = await import("../lib/sources.js");
+  assert.ok(!SOURCES.some((s) => /news\.google|thetexan/.test(s.url)));
+  assert.ok(!SOURCES.some((s) => s.id.startsWith("gn-")));
+});

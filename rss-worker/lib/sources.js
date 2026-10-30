@@ -15,9 +15,6 @@
 //   cap           most items one source may contribute (also how many are saved)
 //   headChars     only this many characters of the response are read (newest items come first)
 
-const GNEWS = (query) =>
-  `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-
 export const SOURCES = [
   // ---- Official: local ----------------------------------------------------
   {
@@ -107,7 +104,7 @@ export const SOURCES = [
     fetcher: "rss",
     url: "https://www.fox44news.com/feed/",
     scope: "central-texas",
-    refreshMinutes: 30,
+    refreshMinutes: 60,
     maxAgeDays: 7,
     cap: 12,
     headChars: 45000,
@@ -119,7 +116,7 @@ export const SOURCES = [
     fetcher: "rss",
     url: "https://www.kwtx.com/arc/outboundfeeds/rss/?outputType=xml",
     scope: "central-texas",
-    refreshMinutes: 30,
+    refreshMinutes: 60,
     maxAgeDays: 7,
     cap: 12,
     headChars: 45000,
@@ -173,7 +170,7 @@ export const SOURCES = [
     url: "https://www.sos.state.tx.us/rss/press.xml",
     scope: "texas",
     texasFocused: true,
-    refreshMinutes: 120,
+    refreshMinutes: 240,
     maxAgeDays: 30,
     cap: 3,
     headChars: 12000,
@@ -186,7 +183,7 @@ export const SOURCES = [
     url: "https://www.texasattorneygeneral.gov/news/releases",
     scope: "texas",
     texasFocused: true,
-    refreshMinutes: 120,
+    refreshMinutes: 240,
     maxAgeDays: 14,
     cap: 3,
     headChars: 60000,
@@ -199,10 +196,10 @@ export const SOURCES = [
     url: "https://www.txdot.gov/about/newsroom/statewide.html",
     scope: "texas",
     texasFocused: true,
-    refreshMinutes: 120,
+    refreshMinutes: 240,
     maxAgeDays: 7,
     cap: 3,
-    headChars: 90000,
+    headChars: 135000,
   },
 
   // ---- News: Texas statewide ---------------------------------------------
@@ -219,74 +216,10 @@ export const SOURCES = [
     cap: 8,
     headChars: 25000,
   },
-  {
-    id: "the-texan",
-    name: "The Texan",
-    kind: "news",
-    fetcher: "rss",
-    url: "https://thetexan.news/search/?f=rss&t=article&l=20&s=start_time&sd=desc",
-    scope: "texas",
-    texasFocused: true,
-    refreshMinutes: 60,
-    maxAgeDays: 5,
-    cap: 8,
-    headChars: 25000,
-  },
 
   // ---- News: Google News searches (SUPPLEMENTAL; surfaces the Killeen Daily
   // Herald and others that have no usable direct feed). Often throttled for
   // datacenter addresses, so nothing depends on these.
-  {
-    id: "gn-copperas-cove",
-    name: "Google News: Copperas Cove",
-    kind: "news",
-    fetcher: "gnews",
-    url: GNEWS('"Copperas Cove" when:14d'),
-    scope: "central-texas",
-    hint: "copperas-cove",
-    refreshMinutes: 60,
-    maxAgeDays: 14,
-    cap: 20,
-    headChars: 30000,
-  },
-  {
-    id: "gn-gatesville",
-    name: "Google News: Gatesville",
-    kind: "news",
-    fetcher: "gnews",
-    url: GNEWS("Gatesville Texas when:14d"),
-    scope: "central-texas",
-    hint: "gatesville",
-    refreshMinutes: 60,
-    maxAgeDays: 14,
-    cap: 15,
-    headChars: 30000,
-  },
-  {
-    id: "gn-coryell",
-    name: "Google News: Coryell County",
-    kind: "news",
-    fetcher: "gnews",
-    url: GNEWS('"Coryell County" when:14d'),
-    scope: "central-texas",
-    hint: "coryell-county",
-    refreshMinutes: 60,
-    maxAgeDays: 14,
-    cap: 15,
-    headChars: 30000,
-  },
-  {
-    id: "gn-isd",
-    name: "Google News: Local schools",
-    kind: "news",
-    fetcher: "gnews",
-    url: GNEWS('"Copperas Cove ISD" OR "Gatesville ISD" OR "Evant ISD" OR "Oglesby ISD" when:14d'),
-    scope: "central-texas",
-    refreshMinutes: 120,
-    maxAgeDays: 14,
-    cap: 10,
-    headChars: 30000,
-  },
 ];
 
 export const ALLOWED_HOSTS = new Set(SOURCES.map((source) => new URL(source.url).hostname));

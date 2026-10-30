@@ -83,13 +83,13 @@ export async function fetchText(url, accept = "*/*", headChars = MAX_BYTES) {
 
 const XML_ACCEPT = "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8";
 
-async function fetchRss(source, now) {
+async function fetchRss(source, now, options = {}) {
   const xml = await fetchText(source.url, XML_ACCEPT, source.headChars || FEED_HEAD_CHARS);
   // Newest items come first in every feed we use; the head of the document is enough
   // and keeps parsing within the free-plan CPU budget.
   // Only about `cap` items are ever kept, so only that many (plus a few spares for
   // blocked or too-old items) are parsed. Summaries are shown for official items only.
-  const items = parseFeed(xml, { maxItems: (source.cap || 15) + 5, now, summaries: true });
+  const items = parseFeed(xml, { maxItems: (source.cap || 15) + 5, now, summaries: source.kind === "official" || options.summaries !== false });
   if (!items.length && !/<(rss|feed|rdf)[\s>]/i.test(xml)) {
     throw new FetchError("response was not a feed", false);
   }
@@ -130,7 +130,11 @@ async function fetchTxDot(source) {
     const title = cleanText(match[2]);
     if (link && title) items.push({ title, link, pubDate: null, publisher: "", summary: "" });
   }
-  if (!items.length) throw new FetchError("no items found (page layout may have changed)", false);
+  if (!items.length) {
+    // The list sits deep in a long page; if the read limit cut it off, say so (this broke TxDOT in 2026-10).
+    const cutOff = html.length >= source.headChars;
+    throw new FetchError(cutOff ? `no items within the first ${source.headChars} characters (page grew; raise headChars)` : "no items found (page layout may have changed)", false);
+  }
   return items;
 }
 
@@ -185,9 +189,11 @@ const FETCHERS = {
 };
 
 // Runs one source; never throws. Errors come back as { ok: false }.
-export async function runSource(source, now) {
+// `options.summaries` false skips reading RSS descriptions for news sources (they are only needed
+// for description-based location evidence); used to measure what that costs.
+export async function runSource(source, now, options = {}) {
   try {
-    return { ok: true, items: await FETCHERS[source.fetcher](source, now) };
+    return { ok: true, items: await FETCHERS[source.fetcher](source, now, options) };
   } catch (error) {
     return { ok: false, error: String(error.message || error) };
   }

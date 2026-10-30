@@ -27,14 +27,15 @@ function linkWords(link) {
 
 // Everything about an item that does not change with time (place, topics,
 // cleaned title) is worked out once, here.
-export function prepareItem(raw, source) {
+export function prepareItem(raw, source, options = {}) {
   const publisher = raw.publisher || source.name;
   const title = stripPublisherSuffix(raw.title, raw.publisher);
   if (isBlocked(title, publisher)) return null;
 
   // When the headline names no place, the description (and link path, as corroboration only)
   // may show the story is about one; see aboutPlace() in classify.js.
-  const location = locate(title, source, raw.publisher, { summary: raw.summary || "", linkText: linkWords(raw.link) });
+  const context = options.context === false ? {} : { summary: raw.summary || "", linkText: linkWords(raw.link) };
+  const location = locate(title, source, raw.publisher, context);
   return {
     title,
     link: raw.link,
@@ -63,7 +64,7 @@ const publishedTime = (item) => (item.pubDate ? Date.parse(item.pubDate) : 0);
 
 // `previousText` is the saved record (JSON text) or null. Returns
 // { write, text, status } where `text` is only meaningful when `write` is true.
-export function ingest(previousText, outcome, source, now) {
+export function ingest(previousText, outcome, source, now, options = {}) {
   const previous = previousText ? JSON.parse(previousText) : null;
   const nowIso = new Date(now).toISOString();
 
@@ -79,7 +80,7 @@ export function ingest(previousText, outcome, source, now) {
 
   const firstSeen = new Map(previous ? previous.items.map((item) => [item.link, item.fs]) : []);
   const items = outcome.items
-    .map((raw) => prepareItem(raw, source))
+    .map((raw) => prepareItem(raw, source, options))
     .filter((item) => item && !(item.pubDate && now - Date.parse(item.pubDate) > source.maxAgeDays * DAY))
     // An item whose source gave no date is labelled with when we first saw it, never a made-up date.
     .map((item) => (item.pubDate ? item : { ...item, fs: firstSeen.get(item.link) || nowIso }))

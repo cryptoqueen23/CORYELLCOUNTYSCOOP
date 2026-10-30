@@ -28,6 +28,9 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 const SCHEDULE = buildSchedule(SOURCES);
+// TEST_SAMPLING="fast" (test Worker only): every source on a 30-minute period, so a short trial
+// samples each source several times. Per-run CPU is unaffected; daily totals are projected from the real schedule.
+const FAST_SCHEDULE = buildSchedule(SOURCES.map((source) => ({ ...source, refreshMinutes: 30 })));
 const SOURCE_BY_ID = new Map(SOURCES.map((source) => [source.id, source]));
 const PREFIXES = metaPrefixes(SOURCES);
 const RECORD_KEY = (id) => `src:${id}`;
@@ -36,9 +39,11 @@ const feedCacheKey = () => new Request("https://cache.invalid/feed-v3");
 
 // Fetch one source and save its record if it changed. Never throws.
 export async function refreshSource(env, source, now = Date.now()) {
+  // CLASSIFY_CONTEXT="0" (test Worker only) turns off description/link location evidence.
+  const options = { context: env.CLASSIFY_CONTEXT !== "0" };
   const previousText = await env.NEWS_KV.get(RECORD_KEY(source.id), "text");
-  const outcome = await runSource(source, now);
-  const result = ingest(previousText, outcome, source, now);
+  const outcome = await runSource(source, now, { summaries: options.context });
+  const result = ingest(previousText, outcome, source, now, options);
   if (result.write) await env.NEWS_KV.put(RECORD_KEY(source.id), result.text);
   console.log(JSON.stringify({ src: source.id, status: result.status, wrote: result.write, error: outcome.ok ? undefined : outcome.error }));
   return result;
@@ -107,7 +112,7 @@ export default {
       console.log(JSON.stringify({ error: "NEWS_KV is not bound" }));
       return;
     }
-    const id = sourceIdForTime(SCHEDULE, event.scheduledTime);
+    const id = sourceIdForTime(env.TEST_SAMPLING === "fast" ? FAST_SCHEDULE : SCHEDULE, event.scheduledTime);
     if (!id) return; // idle tick
     ctx.waitUntil(refreshSource(env, SOURCE_BY_ID.get(id), event.scheduledTime));
   },

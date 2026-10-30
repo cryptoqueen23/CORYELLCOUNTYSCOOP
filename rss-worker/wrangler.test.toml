@@ -15,6 +15,11 @@ compatibility_date = "2026-07-24"
 [triggers]
 crons = ["*/2 * * * *"]
 
+# Test-only measurement switches (see worker.js). Production has no [vars].
+[vars]
+TEST_SAMPLING = "fast"
+CLASSIFY_CONTEXT = "0"
+
 [observability]
 enabled = true
 
