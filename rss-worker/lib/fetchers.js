@@ -84,10 +84,12 @@ export async function fetchText(url, accept = "*/*", headChars = MAX_BYTES) {
 const XML_ACCEPT = "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8";
 
 async function fetchRss(source, now) {
-  const xml = await fetchText(source.url, XML_ACCEPT, FEED_HEAD_CHARS);
+  const xml = await fetchText(source.url, XML_ACCEPT, source.headChars || FEED_HEAD_CHARS);
   // Newest items come first in every feed we use; the head of the document is enough
   // and keeps parsing within the free-plan CPU budget.
-  const items = parseFeed(xml, { maxItems: 40, now });
+  // Only about `cap` items are ever kept, so only that many (plus a few spares for
+  // blocked or too-old items) are parsed. Summaries are shown for official items only.
+  const items = parseFeed(xml, { maxItems: (source.cap || 15) + 5, now, summaries: source.kind === "official" });
   if (!items.length && !/<(rss|feed|rdf)[\s>]/i.test(xml)) {
     throw new FetchError("response was not a feed", false);
   }
@@ -119,7 +121,7 @@ async function fetchGatesville(source, now) {
 // purpose: the Worker records when it first saw each link and labels it as
 // such, never presenting it as a publication date.
 async function fetchTxDot(source) {
-  const html = await fetchText(source.url, "text/html");
+  const html = await fetchText(source.url, "text/html", source.headChars);
   const pattern = /<a class="cmp-list__item-link" href="([^"]+)">\s*<span class="cmp-list__item-title">([^<]+)<\/span>/g;
   const items = [];
   let match;
@@ -134,7 +136,7 @@ async function fetchTxDot(source) {
 
 // Texas Attorney General press releases: server-rendered with real dates.
 async function fetchAttorneyGeneral(source, now) {
-  const html = await fetchText(source.url, "text/html");
+  const html = await fetchText(source.url, "text/html", source.headChars);
   const blocks = html.match(/<div class="m-b-3">[\s\S]*?<\/div>/g) || [];
   const items = [];
 

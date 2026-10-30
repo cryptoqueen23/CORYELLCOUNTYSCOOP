@@ -5,13 +5,15 @@
 // Fields
 //   kind          "official" (government announcement) | "news" (published reporting)
 //   scope         coverage area used when the story itself doesn't say: a LOCATION_ORDER id
-//   localOfficial true when every item from this source is local by definition
+//   localOfficial true when every item from this source is local by definition (a city, the sheriff)
+//   localOutlet   true for a newspaper whose whole beat is `scope` (Leader Press, Gatesville Messenger)
 //   texasFocused  true when the outlet is Texas-only (so a bare election word is Texas election news)
 //   hint          Google News searches only: the place the search was for (weak signal)
-//   refreshMinutes minimum minutes between fetches of this source
+//   refreshMinutes how often this source is fetched. Must divide 120 and be a multiple of 2
+//                 (the schedule repeats every 4 hours, one source per 2-minute cron tick).
 //   maxAgeDays    items older than this are not shown
-//   cap           most items one source may contribute
-//   cost          rough CPU cost of one fetch+parse in ms (default 1); runs are budgeted by it
+//   cap           most items one source may contribute (also how many are saved)
+//   headChars     only this many characters of the response are read (newest items come first)
 
 const GNEWS = (query) =>
   `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
@@ -29,6 +31,7 @@ export const SOURCES = [
     refreshMinutes: 30,
     maxAgeDays: 45,
     cap: 15,
+    headChars: 30000,
   },
   {
     id: "gatesville-city",
@@ -53,6 +56,7 @@ export const SOURCES = [
     refreshMinutes: 120,
     maxAgeDays: 45,
     cap: 10,
+    headChars: 30000,
   },
   {
     id: "nws-alerts",
@@ -62,15 +66,80 @@ export const SOURCES = [
     url: "https://api.weather.gov/alerts/active?zone=TXZ157",
     scope: "coryell-county",
     localOfficial: true,
-    refreshMinutes: 15,
+    refreshMinutes: 20,
     maxAgeDays: 2,
     cap: 5,
+  },
+
+  // ---- News: local newspapers (direct publisher feeds) ----------------------
+  {
+    id: "leader-press",
+    name: "Copperas Cove Leader Press",
+    kind: "news",
+    fetcher: "rss",
+    url: "https://www.coveleaderpress.com/rss.xml",
+    scope: "copperas-cove",
+    localOutlet: true,
+    refreshMinutes: 30,
+    maxAgeDays: 21,
+    cap: 15,
+    headChars: 40000,
+  },
+  {
+    id: "gatesville-messenger",
+    name: "The Gatesville Messenger",
+    kind: "news",
+    fetcher: "rss",
+    url: "https://www.gatesvillemessenger.com/rss.xml",
+    scope: "gatesville",
+    localOutlet: true,
+    refreshMinutes: 60,
+    maxAgeDays: 21,
+    cap: 15,
+    headChars: 40000,
+  },
+
+  // ---- News: regional ---------------------------------------------------------
+  {
+    id: "fox44",
+    name: "KWKT Fox 44",
+    kind: "news",
+    fetcher: "rss",
+    url: "https://www.fox44news.com/feed/",
+    scope: "central-texas",
+    refreshMinutes: 30,
+    maxAgeDays: 7,
+    cap: 12,
+    headChars: 45000,
+  },
+  {
+    id: "kwtx",
+    name: "KWTX",
+    kind: "news",
+    fetcher: "rss",
+    url: "https://www.kwtx.com/arc/outboundfeeds/rss/?outputType=xml",
+    scope: "central-texas",
+    refreshMinutes: 30,
+    maxAgeDays: 7,
+    cap: 12,
+    headChars: 45000,
+  },
+  {
+    id: "lampasas-dispatch",
+    name: "Lampasas Dispatch Record",
+    kind: "news",
+    fetcher: "rss",
+    url: "https://www.lampasasdispatchrecord.com/rss.xml",
+    scope: "central-texas",
+    refreshMinutes: 120,
+    maxAgeDays: 14,
+    cap: 8,
+    headChars: 40000,
   },
 
   // ---- Official: Texas ----------------------------------------------------
   {
     id: "tx-dps",
-    cost: 4,
     name: "Texas Department of Public Safety",
     kind: "official",
     fetcher: "rss",
@@ -80,6 +149,7 @@ export const SOURCES = [
     refreshMinutes: 60,
     maxAgeDays: 14,
     cap: 4,
+    headChars: 12000,
   },
   {
     id: "tx-governor",
@@ -92,10 +162,10 @@ export const SOURCES = [
     refreshMinutes: 60,
     maxAgeDays: 14,
     cap: 3,
+    headChars: 20000,
   },
   {
     id: "tx-sos",
-    cost: 2,
     name: "Texas Secretary of State",
     kind: "official",
     fetcher: "rss",
@@ -105,6 +175,7 @@ export const SOURCES = [
     refreshMinutes: 120,
     maxAgeDays: 30,
     cap: 3,
+    headChars: 12000,
   },
   {
     id: "tx-ag",
@@ -117,6 +188,7 @@ export const SOURCES = [
     refreshMinutes: 120,
     maxAgeDays: 14,
     cap: 3,
+    headChars: 60000,
   },
   {
     id: "txdot",
@@ -129,36 +201,12 @@ export const SOURCES = [
     refreshMinutes: 120,
     maxAgeDays: 7,
     cap: 3,
-  },
-
-  // ---- News: regional TV --------------------------------------------------
-  {
-    id: "kwtx",
-    name: "KWTX",
-    kind: "news",
-    fetcher: "rss",
-    url: "https://www.kwtx.com/arc/outboundfeeds/rss/?outputType=xml",
-    scope: "central-texas",
-    refreshMinutes: 20,
-    maxAgeDays: 7,
-    cap: 15,
-  },
-  {
-    id: "kcen",
-    name: "KCEN",
-    kind: "news",
-    fetcher: "rss",
-    url: "https://www.kcentv.com/feeds/syndication/rss/news/local",
-    scope: "central-texas",
-    refreshMinutes: 20,
-    maxAgeDays: 7,
-    cap: 15,
+    headChars: 90000,
   },
 
   // ---- News: Texas statewide ---------------------------------------------
   {
     id: "tx-scorecard",
-    cost: 2,
     name: "Texas Scorecard",
     kind: "news",
     fetcher: "rss",
@@ -168,6 +216,7 @@ export const SOURCES = [
     refreshMinutes: 60,
     maxAgeDays: 5,
     cap: 8,
+    headChars: 25000,
   },
   {
     id: "the-texan",
@@ -180,47 +229,50 @@ export const SOURCES = [
     refreshMinutes: 60,
     maxAgeDays: 5,
     cap: 8,
+    headChars: 25000,
   },
 
-  // ---- News: Google News searches (surface local papers, per-story publisher)
+  // ---- News: Google News searches (SUPPLEMENTAL; surfaces the Killeen Daily
+  // Herald and others that have no usable direct feed). Often throttled for
+  // datacenter addresses, so nothing depends on these.
   {
     id: "gn-copperas-cove",
-    cost: 2,
     name: "Google News: Copperas Cove",
     kind: "news",
     fetcher: "gnews",
     url: GNEWS('"Copperas Cove" when:14d'),
     scope: "central-texas",
     hint: "copperas-cove",
-    refreshMinutes: 20,
+    refreshMinutes: 60,
     maxAgeDays: 14,
-    cap: 25,
+    cap: 20,
+    headChars: 30000,
   },
   {
     id: "gn-gatesville",
-    cost: 2,
     name: "Google News: Gatesville",
     kind: "news",
     fetcher: "gnews",
-    url: GNEWS('Gatesville Texas when:14d'),
+    url: GNEWS("Gatesville Texas when:14d"),
     scope: "central-texas",
     hint: "gatesville",
-    refreshMinutes: 20,
+    refreshMinutes: 60,
     maxAgeDays: 14,
-    cap: 25,
+    cap: 15,
+    headChars: 30000,
   },
   {
     id: "gn-coryell",
-    cost: 2,
     name: "Google News: Coryell County",
     kind: "news",
     fetcher: "gnews",
     url: GNEWS('"Coryell County" when:14d'),
     scope: "central-texas",
     hint: "coryell-county",
-    refreshMinutes: 20,
+    refreshMinutes: 60,
     maxAgeDays: 14,
-    cap: 25,
+    cap: 15,
+    headChars: 30000,
   },
   {
     id: "gn-isd",
@@ -229,9 +281,10 @@ export const SOURCES = [
     fetcher: "gnews",
     url: GNEWS('"Copperas Cove ISD" OR "Gatesville ISD" OR "Evant ISD" OR "Oglesby ISD" when:14d'),
     scope: "central-texas",
-    refreshMinutes: 30,
+    refreshMinutes: 120,
     maxAgeDays: 14,
-    cap: 15,
+    cap: 10,
+    headChars: 30000,
   },
 ];
 

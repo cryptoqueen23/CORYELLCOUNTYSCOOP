@@ -98,7 +98,7 @@ function extractAtomLink(block) {
 // Parses RSS 2.0, RSS 1.0-style, and Atom. Returns raw (unfiltered) items.
 // `maxItems` bounds CPU on very large feeds (the Secretary of State feed has
 // 400+ items, almost all years old).
-export function parseFeed(xml, { maxItems = 40, now = Date.now() } = {}) {
+export function parseFeed(xml, { maxItems = 40, now = Date.now(), summaries = true } = {}) {
   const text = String(xml ?? "");
   const isAtom = /<feed[\s>]/i.test(text) && !/<rss[\s>]/i.test(text);
   const tag = isAtom ? "entry" : "item";
@@ -123,7 +123,7 @@ export function parseFeed(xml, { maxItems = 40, now = Date.now() } = {}) {
       link,
       pubDate: parseDate(cleanText(dateRaw, 80), now),
       publisher: sourceMatch ? cleanText(sourceMatch[1], 120) : "",
-      summary: cleanText(extractTag(block, isAtom ? "summary" : "description"), 200),
+      summary: summaries ? cleanText(extractTag(block, isAtom ? "summary" : "description"), 200) : "",
     });
   }
   return items;

@@ -77,6 +77,10 @@ export function locate(title, source, publisher = "") {
   if (source.localOfficial) {
     return { locations: sortByLocality([source.scope, ...found, "texas"]), basis: "source" };
   }
+  // A newspaper whose whole beat is this place: local even when the headline omits the town.
+  if (source.localOutlet) {
+    return { locations: sortByLocality([source.scope, ...found, "texas"]), basis: "publisher" };
+  }
   if (found.length) {
     return { locations: sortByLocality([...found, "texas"]), basis: "title" };
   }
@@ -226,7 +230,11 @@ export function categorize(title, source, location) {
   // Non-Texas stories that use election words (other states' races on
   // regional feeds) don't count: the headline must show a Texas/local tie, or
   // the source must be Texas-focused.
-  const texasTie = location.basis === "title" || source.texasFocused === true || source.localOfficial === true;
+  const texasTie =
+    location.basis === "title" ||
+    source.texasFocused === true ||
+    source.localOfficial === true ||
+    source.localOutlet === true;
 
   for (const id of Object.keys(CATEGORY_PATTERNS)) {
     if (!CATEGORY_PATTERNS[id].test(title)) continue;
