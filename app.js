@@ -410,6 +410,21 @@ document.querySelector("#year").textContent = new Date().getFullYear();
 loadWeather();
 loadHeadlines();
 
+// Tell assistive technology which links open a new tab. Runs again whenever the page content changes
+// (stories and configured links are added after load); it skips links that already say so.
+function markNewTabLinks() {
+  document.querySelectorAll('a[target="_blank"]').forEach((link) => {
+    if (link.querySelector(".visually-hidden") || /opens in/i.test(link.textContent)) return;
+    link.append(el("span", "visually-hidden", " (opens in a new tab)"));
+  });
+}
+markNewTabLinks();
+let newTabTimer;
+new MutationObserver(() => {
+  clearTimeout(newTabTimer);
+  newTabTimer = setTimeout(markNewTabLinks, 100);
+}).observe(document.body, { childList: true, subtree: true });
+
 // ---- Insurance section configuration ----------------------------------------
 // Text and links come from site-config.json so they can be changed without
 // touching code. The HTML contains the same values as defaults, so the section
