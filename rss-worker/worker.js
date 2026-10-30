@@ -53,22 +53,27 @@ const isHeartbeatTick = (env, scheduledTime) =>
   env.HEARTBEAT !== "0" && Math.floor(scheduledTime / (TICK_MINUTES * 60_000)) % HEARTBEAT_EVERY_TICKS === 0;
 
 // One scheduled tick: refresh the tick's source (if any), then once an hour record that the scheduler ran.
-// The marker says only that THIS execution completed and how this tick's one source went; it never
-// claims that other sources were fetched (per-source health comes from their own records).
-export async function runTick(env, id, scheduledTime) {
-  let status = "idle";
+// The marker answers only "did the scheduler execute, and when?":
+//   t       when the tick was SCHEDULED          at      when it ACTUALLY ran (they differ if Cloudflare ran it late)
+//   run     "completed" | "error"   whether this execution itself failed (an error marker is never "healthy")
+//   src / result   the one source this tick handled and how it went; says nothing about any other source
+// Per-source health comes from each source's own saved record (lib/health.js).
+export async function runTick(env, id, scheduledTime, actualTime = Date.now()) {
+  let result = "idle";
+  let run = "completed";
   let error;
   if (id) {
     try {
-      status = (await refreshSource(env, SOURCE_BY_ID.get(id), scheduledTime)).status;
+      result = (await refreshSource(env, SOURCE_BY_ID.get(id), actualTime)).status;
     } catch (caught) {
-      status = "error";
+      run = "error";
+      result = "error";
       error = String(caught && caught.message ? caught.message : caught).slice(0, 160);
-      console.log(JSON.stringify({ src: id, status, error }));
+      console.log(JSON.stringify({ src: id, status: result, error }));
     }
   }
   if (isHeartbeatTick(env, scheduledTime)) {
-    const marker = { t: new Date(scheduledTime).toISOString(), src: id || null, status };
+    const marker = { t: new Date(scheduledTime).toISOString(), at: new Date(actualTime).toISOString(), run, src: id || null, result };
     if (error) marker.error = error;
     await env.NEWS_KV.put(TICK_KEY, JSON.stringify(marker));
   }

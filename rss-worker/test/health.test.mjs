@@ -79,11 +79,40 @@ test("a healthy source with no news is quiet, never failing (agencies that rarel
 });
 
 test("scheduler health: ok, late and missing from the hourly marker; unknown before the first one", () => {
-  assert.equal(schedulerHealth({ t: ago(50), status: "ok" }, NOW).status, "ok");
+  assert.equal(schedulerHealth({ t: ago(50), at: ago(50), run: "completed" }, NOW).status, "ok");
   assert.equal(schedulerHealth({ t: ago(TICK_LATE_MS / MIN + 1) }, NOW).status, "late");
   assert.equal(schedulerHealth({ t: ago(TICK_MISSING_MS / MIN + 1) }, NOW).status, "missing");
   assert.equal(schedulerHealth(null, NOW).status, "unknown");
   assert.match(schedulerHealth({ t: ago(5) }, NOW).note, /does not show that every source was fetched/);
+});
+
+test("scheduled time and actual execution time are kept apart: a late run is 'delayed', a missing one is not", () => {
+  // Scheduled 55 min ago but only ran 30 min ago (25 min late): the scheduler is alive, and the age counts from when it ran.
+  const delayed = schedulerHealth({ t: ago(55), at: ago(30), run: "completed" }, NOW);
+  assert.equal(delayed.status, "delayed");
+  assert.equal(delayed.executionDelayMinutes, 25);
+  assert.equal(delayed.ageMinutes, 30);
+  assert.equal(delayed.lastScheduled, ago(55));
+  assert.equal(delayed.lastExecuted, ago(30));
+  // A small delay is normal.
+  assert.equal(schedulerHealth({ t: ago(35), at: ago(30), run: "completed" }, NOW).status, "ok");
+  // Scheduled long ago and never ran until recently is still judged by when it actually ran...
+  assert.equal(schedulerHealth({ t: ago(400), at: ago(20), run: "completed" }, NOW).status, "delayed");
+  // ...and a marker whose execution is old is late/missing regardless of how on-time it was.
+  assert.equal(schedulerHealth({ t: ago(200), at: ago(199), run: "completed" }, NOW).status, "missing");
+});
+
+test("a marker recording an error never looks fully healthy, and says nothing about other sources", () => {
+  const h = schedulerHealth({ t: ago(10), at: ago(10), run: "error", src: "cove-city", result: "error", error: "boom" }, NOW);
+  assert.equal(h.status, "degraded");
+  assert.equal(h.lastTickSource, "cove-city");
+  assert.equal(h.lastError, "boom");
+  // A completed run whose single source failed is a source problem, not a scheduler problem.
+  const sourceFailed = schedulerHealth({ t: ago(10), at: ago(10), run: "completed", src: "cove-city", result: "stale" }, NOW);
+  assert.equal(sourceFailed.status, "ok");
+  assert.equal(sourceFailed.lastTickResult, "stale");
+  // Error beyond the late threshold is reported as late/missing, the worse state.
+  assert.equal(schedulerHealth({ t: ago(200), at: ago(200), run: "error" }, NOW).status, "missing");
 });
 
 test("the hourly marker costs 24 writes a day, only on the hour, and never claims other sources succeeded", async () => {
@@ -93,8 +122,9 @@ test("the hourly marker costs 24 writes a day, only on the hour, and never claim
   for (let tick = 0; tick < 720; tick += 1) await runTick(env, null, day + tick * 2 * MIN);
   assert.equal(kv.writesByKey["meta:lastTick"], 24);
   const marker = JSON.parse(kv.data.get("meta:lastTick"));
-  assert.deepEqual(Object.keys(marker).sort(), ["src", "status", "t"], "scheduled time, this tick's source, this tick's status");
-  assert.equal(marker.status, "idle");
+  assert.deepEqual(Object.keys(marker).sort(), ["at", "result", "run", "src", "t"], "scheduled, actual, run outcome, this tick's source and result");
+  assert.equal(marker.result, "idle");
+  assert.equal(marker.run, "completed");
   assert.equal(kv.writes, 24, "idle ticks that are not on the hour write nothing");
 });
 
@@ -104,8 +134,10 @@ test("a tick whose source throws is recorded as an error and the marker is still
   const onTheHour = Math.ceil(Date.parse("2026-10-30T00:30:00Z") / (60 * MIN)) * 60 * MIN;
   await runTick({ NEWS_KV: kv }, "cove-city", onTheHour);
   const marker = JSON.parse(kv.data.get("meta:lastTick"));
-  assert.equal(marker.status, "error");
+  assert.equal(marker.run, "error");
+  assert.equal(marker.result, "error");
   assert.ok(marker.error);
+  assert.equal(schedulerHealth(marker, Date.parse(marker.at) + 5 * MIN).status, "degraded");
 });
 
 test("HEARTBEAT=0 turns the marker off (used while other costs are measured)", async () => {
@@ -154,6 +186,16 @@ test("overnight outage: the cron stops, visitors still get the last stories with
   } finally {
     globalThis.fetch = real;
   }
-  assert.equal(JSON.parse(kv.data.get("meta:lastTick")).status, "ok");
+  assert.equal(JSON.parse(kv.data.get("meta:lastTick")).run, "completed");
   assert.equal(JSON.parse(kv.data.get("src:cove-city")).f, 0);
+});
+
+test("the marker records when the tick actually ran, separately from when it was scheduled", async () => {
+  const kv = fakeKv();
+  const scheduled = Date.parse("2026-10-30T05:00:00Z");
+  await runTick({ NEWS_KV: kv }, null, scheduled, scheduled + 17 * MIN);
+  const marker = JSON.parse(kv.data.get("meta:lastTick"));
+  assert.equal(marker.t, "2026-10-30T05:00:00.000Z");
+  assert.equal(marker.at, "2026-10-30T05:17:00.000Z");
+  assert.equal(schedulerHealth(marker, scheduled + 20 * MIN).status, "delayed");
 });

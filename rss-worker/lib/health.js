@@ -15,6 +15,8 @@ const DAY = 86_400_000;
 // The marker is written once an hour; allow for a late tick before calling it late or missing.
 export const TICK_LATE_MS = 90 * MINUTE;
 export const TICK_MISSING_MS = 3 * 60 * MINUTE;
+// A tick that ran this long after its scheduled time is "delayed" (late execution, not a missed one).
+export const EXECUTION_DELAY_MS = 10 * MINUTE;
 
 // An unchanged source is only re-saved once its last confirmation is older than HEARTBEAT_MS, and
 // fetches happen every `refreshMinutes`, so a healthy source's confirmation can be this old:
@@ -30,18 +32,32 @@ export function overdueAfterMs(refreshMinutes) {
   return expectedMaxAgeMs(refreshMinutes) + refreshMinutes * MINUTE + 5 * MINUTE;
 }
 
+// Statuses, worst first: missing (no execution for 3 h) > late (none for 90 min) > degraded (the last
+// execution itself errored) > delayed (it ran, but well after its scheduled time) > ok.
+// `lastTickResult` is how that one tick's own source went; it never stands for any other source.
 export function schedulerHealth(tick, now) {
   if (!tick || !tick.t) {
-    return { status: "unknown", lastTick: null, ageMinutes: null, note: "No scheduler marker has been written yet." };
+    return { status: "unknown", lastScheduled: null, lastExecuted: null, ageMinutes: null, note: "No scheduler marker has been written yet." };
   }
-  const age = now - Date.parse(tick.t);
-  const status = age > TICK_MISSING_MS ? "missing" : age > TICK_LATE_MS ? "late" : "ok";
+  const executed = tick.at || tick.t; // markers from before 'at' existed only had the scheduled time
+  const age = now - Date.parse(executed);
+  const delay = tick.at ? Date.parse(tick.at) - Date.parse(tick.t) : 0;
+  let status = "ok";
+  if (age > TICK_MISSING_MS) status = "missing";
+  else if (age > TICK_LATE_MS) status = "late";
+  else if (tick.run === "error") status = "degraded";
+  else if (delay > EXECUTION_DELAY_MS) status = "delayed";
   return {
     status,
-    lastTick: tick.t,
+    lastScheduled: tick.t,
+    lastExecuted: executed,
+    executionDelayMinutes: Math.round(delay / MINUTE),
     ageMinutes: Math.round(age / MINUTE),
-    lastTickResult: tick.status || null,
-    note: "Shows that a scheduled run happened. It does not show that every source was fetched.",
+    lastRun: tick.run || "completed",
+    lastTickSource: tick.src || null,
+    lastTickResult: tick.result || tick.status || null,
+    lastError: tick.error || null,
+    note: "Shows that a scheduled run executed, and when. It does not show that every source was fetched; see each source's own fetch status.",
   };
 }
 

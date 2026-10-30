@@ -82,3 +82,9 @@ test("during an outage the last good stories keep their original dates and are n
   assert.equal(out.stories[0].pubDate, hoursAgo(30));
   assert.equal(out.stories[0].title, "Story");
 });
+
+test("'updated' uses when the scheduler actually ran, not when the tick was scheduled", () => {
+  const s = Object.assign(source("a"), { rec: Object.assign(rec([item("Story")]), { t: hoursAgo(6) }) });
+  const out = build(Object.assign(feed([s]), { tick: { t: hoursAgo(3), at: hoursAgo(1), run: "completed" } }), NOW);
+  assert.equal(out.generatedAt, hoursAgo(1));
+});

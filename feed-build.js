@@ -172,7 +172,7 @@
       var t = source.rec && source.rec.t ? Date.parse(source.rec.t) : 0;
       if (t > newestConfirmed) newestConfirmed = t;
     });
-    var tick = feed.tick && feed.tick.t ? Date.parse(feed.tick.t) : 0;
+    var tick = feed.tick && (feed.tick.at || feed.tick.t) ? Date.parse(feed.tick.at || feed.tick.t) : 0; // when it ACTUALLY ran
     var refreshed = tick || newestConfirmed;
     return {
       schema: 2,
