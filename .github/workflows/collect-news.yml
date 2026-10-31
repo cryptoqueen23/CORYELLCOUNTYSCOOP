@@ -46,6 +46,8 @@ jobs:
       - name: Collect sources
         # Exit code 2 (state file unreadable, or no source reachable at all) fails the run and GitHub notifies the owner.
         # One failing source never fails the run; it shows in the summary and as a warning annotation.
+        env:
+          FETCH_TIMEOUT_MS: "25000" # gov.texas.gov needs 7-10 s; the Worker's 8 s limit made it fail
         run: node collector/collect.mjs --state=data/news.json --out=data/news.json
 
       - name: Publish only if the file changed

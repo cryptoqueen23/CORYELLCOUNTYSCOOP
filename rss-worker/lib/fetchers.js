@@ -6,7 +6,9 @@ import { cleanText, decodeEntities, parseDate, parseFeed, safeUrl } from "./pars
 import { isAllowedHost } from "./sources.js";
 
 const USER_AGENT = "Mozilla/5.0 (compatible; CoryellCountyMessengerBot/2.0; +https://www.coryellcountyhub.xyz/)";
-const TIMEOUT_MS = 8000;
+// The Worker keeps 8 s. The GitHub Actions collector sets FETCH_TIMEOUT_MS because some official hosts
+// (gov.texas.gov takes 7-10 s to send its first byte) are slower than that and a runner has no CPU limit.
+const TIMEOUT_MS = (typeof process !== "undefined" && process.env && Number(process.env.FETCH_TIMEOUT_MS)) || 8000;
 const MAX_BYTES = 1_500_000;
 const RETRY_DELAY_MS = 700;
 const FEED_HEAD_CHARS = 90_000;

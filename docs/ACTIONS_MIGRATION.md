@@ -38,6 +38,13 @@ once per 4 hours, never retried within a run, never blocks other sources, and sh
 "Not responding, showing earlier results". Its feed has no usable current items (items dated 2001 are treated as missing),
 so the practical loss is small. If the Texas SOS webmaster allows the GitHub range, it recovers by itself.
 
+## Other source behaviour seen from GitHub's runners (proof-of-concept runs)
+
+- **Texas Governor** needs 7-10 s to send its first byte (also from a home connection); the Worker's 8 s limit made it time out in 4 of 8 runner attempts. The collector sets `FETCH_TIMEOUT_MS=25000` (the Worker keeps 8 s). With it, 15 of 15 sources succeed from a local run.
+- **Texas DPS** failed 2 of 8 attempts with a transient connection error and recovered on the retry pass or the next run.
+- **Texas Scorecard** returned a Cloudflare bot challenge (HTTP 403 "Just a moment...") once in 7 attempts; it is retried on every run until it passes.
+- The two local newspapers (Leader Press, Gatesville Messenger), which failed with HTTP 520 from Cloudflare's network, answered HTTP 200 every time from GitHub (5 of 5).
+
 ## Safety properties
 
 - Workflow permissions: `contents: read` globally; the one job gets `contents: write` (pushes `data` only). No secrets.
