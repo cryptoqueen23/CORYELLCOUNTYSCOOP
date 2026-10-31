@@ -1,0 +1,75 @@
+# Collects the approved news sources and publishes news.json on the `data` branch.
+# The site reads that file; main (and therefore Vercel) is never touched by this workflow.
+# See docs/ACTIONS_MIGRATION.md for the design, deployment steps and rollback.
+name: collect-news
+
+on:
+  schedule:
+    # Every 15 minutes, offset from the top of the hour (GitHub delays :00 runs under load).
+    # Each run only fetches the sources that are due (see refreshMinutes in rss-worker/lib/sources.js).
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch: {}
+
+# One collector at a time; a run that is still going is never cancelled half-way (it may be about to publish).
+concurrency:
+  group: collect-news
+  cancel-in-progress: false
+
+# Nothing is writable unless a job asks for it.
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: write # only used to push the `data` branch
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check out the data branch (created on the first run)
+        run: |
+          if git fetch --no-tags --depth=1 origin data; then
+            git worktree add --detach data FETCH_HEAD
+          else
+            echo "No data branch yet: starting an empty one"
+            git worktree add --orphan -b data data
+          fi
+          # Belt and braces: the data branch must never trigger a Vercel build.
+          echo '{ "git": { "deploymentEnabled": false } }' > data/vercel.json
+
+      - name: Collect sources
+        # Exit code 2 (state file unreadable, or no source reachable at all) fails the run and GitHub notifies the owner.
+        # One failing source never fails the run; it shows in the summary and as a warning annotation.
+        env:
+          FETCH_TIMEOUT_MS: "25000" # gov.texas.gov needs 7-10 s; the Worker's 8 s limit made it fail
+        run: node collector/collect.mjs --state=data/news.json --out=data/news.json
+
+      - name: Publish only if the file changed
+        working-directory: data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to publish"
+            exit 0
+          fi
+          git commit -q -m "news $(date -u +%Y-%m-%dT%H:%MZ)"
+          for attempt in 1 2 3; do
+            if git push -q origin HEAD:refs/heads/data; then
+              echo "Published"
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt); fetching and retrying"
+            git fetch --no-tags -q origin data
+            git rebase -q FETCH_HEAD || { git rebase --abort; break; }
+            sleep $((attempt * 5))
+          done
+          echo "::error title=Publish failed::could not push the data branch"
+          exit 1

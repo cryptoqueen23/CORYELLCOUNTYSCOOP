@@ -3,65 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Coryell County Messenger brings Coryell County news, Texas headlines, public safety, community stories, and The Coryell County Scoop together in one place.">
+  <meta name="description" content="Recent news for Copperas Cove, Gatesville and Coryell County, Texas, gathered automatically from local newspapers, TV stations and official government sources, with Texas headlines after local news.">
   <meta name="theme-color" content="#a30f17">
-  <title>The Coryell County Messenger</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;600;700;800&family=Roboto+Slab:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="canonical" href="https://www.coryellcountyhub.xyz/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Coryell County Messenger">
+  <meta property="og:description" content="Recent, properly sourced news for Copperas Cove, Gatesville and Coryell County, Texas.">
+  <meta property="og:url" content="https://www.coryellcountyhub.xyz/">
+  <meta property="og:image" content="https://www.coryellcountyhub.xyz/mari-and-dog.jpeg">
+  <meta name="twitter:card" content="summary">
+  <title>The Coryell County Messenger | Copperas Cove, Gatesville and Coryell County News</title>
   <link rel="stylesheet" href="styles.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"NewsMediaOrganization","name":"The Coryell County Messenger","url":"https://www.coryellcountyhub.xyz/","areaServed":"Coryell County, Texas"}
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <div class="utility-bar">
-    <div class="container utility-inner">
-      <div class="utility-left">
-        <span>📍 Coryell County, Texas</span>
-        <span>☀️ Local weather</span>
-      </div>
-      <p>Real news. Local voices. Coryell County first.</p>
-    </div>
-  </div>
-
   <header class="site-header">
+    <div class="utility-bar">
+      <div class="container utility-inner">
+        <div class="utility-left">
+          <span>📍 Coryell County, Texas</span>
+        </div>
+        <p>Real news. Local voices. Coryell County first.</p>
+      </div>
+    </div>
     <div class="container masthead">
-      <a class="brand" href="#" aria-label="The Coryell County Messenger home">
+      <a class="brand" href="#top">
         <span class="brand-small">THE</span>
         <span class="brand-main">CORYELL COUNTY</span>
         <span class="brand-accent">MESSENGER</span>
         <span class="brand-tagline">Your county. Your community. Your messenger.</span>
       </a>
 
-      <section class="scoop-profile" aria-labelledby="scoop-profile-title">
-        <img src="mari-and-dog.jpeg" alt="Mari smiling while holding her black French bulldog">
+      <div class="scoop-profile">
+        <img src="mari-and-dog.jpeg" width="120" height="150" alt="Mari smiling while holding her black French bulldog">
         <div>
           <span class="sponsor-label">Sponsored by</span>
-          <h2 id="scoop-profile-title">The Coryell County Scoop</h2>
+          <p class="scoop-profile-title">The Coryell County Scoop</p>
           <p>Proudly local. Passionately independent.</p>
           <a href="https://www.facebook.com/groups/255196943007202" target="_blank" rel="noopener noreferrer">
             Visit the Facebook community
           </a>
         </div>
-      </section>
+      </div>
     </div>
 
     <nav class="main-nav" aria-label="Primary navigation">
       <div class="container nav-row">
-        <button class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="primary-menu" aria-label="Open navigation menu">
+        <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="primary-menu" aria-label="Open navigation menu">
           <span aria-hidden="true">☰</span>
           <span>Menu</span>
         </button>
 
         <ul class="primary-menu" id="primary-menu">
-          <li><a href="#top-stories">Home</a></li>
-          <li><a href="#local-news">Local News</a></li>
-          <li><a href="#texas-news">Texas News</a></li>
-          <li><a href="#election-watch">Election Watch</a></li>
+          <li><a href="#top">Home</a></li>
+          <li><a href="#latest-local">Local News</a></li>
+          <li><a href="#government">Government</a></li>
+          <li><a href="#schools">Schools</a></li>
+          <li><a href="#elections">Elections</a></li>
           <li><a href="#public-safety">Public Safety</a></li>
+          <li><a href="#texas">Texas</a></li>
           <li><a href="#community">Community</a></li>
+          <li data-insurance><a href="#insurance" class="nav-insurance">Life &amp; Health Insurance</a></li>
           <li><a href="#the-scoop">The Scoop</a></li>
-          <li><a href="#complaint">Complaint of the Day</a></li>
           <li><a href="#contact">Contact</a></li>
           <li><a href="https://www.guess.freedomsfighter.com/" target="_blank" rel="noopener" class="nav-cta-pulse">Guess Your Party</a></li>
         </ul>
@@ -69,61 +76,85 @@
     </nav>
   </header>
 
-  <main id="main-content">
-    <section class="breaking-bar" aria-label="Breaking news">
-      <div class="container breaking-inner">
-        <strong>Breaking News</strong>
-        <p id="breaking-news-text">Coryell County headlines will appear here from your RSS feeds.</p>
+  <main id="main-content" tabindex="-1">
+    <section class="latest-bar" id="latest-bar" aria-label="Most recent local headline" hidden>
+      <div class="container latest-inner">
+        <strong id="latest-label">Latest</strong>
+        <p id="latest-text"></p>
       </div>
     </section>
 
-    <section class="weather-card container" aria-labelledby="weather-title">
-      <div>
-        <span class="eyebrow">Local Weather</span>
-        <h2 id="weather-title">Coryell County Weather</h2>
-      </div>
+    <div class="hero container" id="top">
+      <section class="search-panel" aria-labelledby="page-title">
+        <p class="eyebrow">Updated automatically</p>
+        <h1 id="page-title">Coryell County news, gathered for you.</h1>
+        <p class="search-lead">Recent reporting and official announcements for Copperas Cove, Gatesville and Coryell County. Texas headlines come after local news.</p>
 
-      <div id="weather-content">
-        <p>Loading local forecast…</p>
-      </div>
-    </section>
+        <form class="filters" id="filters" role="search" aria-label="Search and filter news">
+          <div class="field field-wide">
+            <label for="q">Search current headlines</label>
+            <input type="search" id="q" name="q" autocomplete="off" placeholder="Try &quot;budget&quot;, &quot;ISD&quot; or &quot;US 190&quot;">
+          </div>
+          <div class="field">
+            <label for="f-location">Place</label>
+            <select id="f-location" name="location">
+              <option value="">All places</option>
+              <option value="copperas-cove">Copperas Cove</option>
+              <option value="gatesville">Gatesville</option>
+              <option value="coryell-county">Coryell County</option>
+              <option value="central-texas">Central Texas</option>
+              <option value="texas">Texas statewide</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-category">Topic</label>
+            <select id="f-category" name="category">
+              <option value="">All topics</option>
+              <option value="government">Government &amp; taxpayers</option>
+              <option value="schools">Schools</option>
+              <option value="elections">Elections</option>
+              <option value="public-safety">Public safety</option>
+              <option value="infrastructure">Roads, water &amp; infrastructure</option>
+              <option value="community">Community</option>
+              <option value="sports">Sports</option>
+              <option value="general">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-date">Published</label>
+            <select id="f-date" name="date">
+              <option value="">Any time available</option>
+              <option value="1">Last 24 hours</option>
+              <option value="3">Last 3 days</option>
+              <option value="7">Last 7 days</option>
+            </select>
+          </div>
+          <div class="field field-action">
+            <button type="button" class="button button-dark" id="reset-filters">Clear filters</button>
+          </div>
+        </form>
+        <p class="scope-note">Search covers the headlines currently shown on this site (the last couple of weeks), not an archive.</p>
+      </section>
 
-    <section class="hero container" id="top-stories">
-      <article class="lead-story">
-        <video
-          class="lead-video"
-          id="hero-video"
-          autoplay
-          muted
-          loop
-          playsinline
-          preload="metadata"
-          aria-hidden="true"
-        >
-          <source src="video/coryellcourt.mp4" type="video/mp4">
-        </video>
+      <div class="hero-sidebar">
+        <section class="weather-card" aria-labelledby="weather-title">
+          <p class="eyebrow">National Weather Service</p>
+          <h2 id="weather-title">Gatesville weather</h2>
+          <div id="weather-content">
+            <p>Loading weather…</p>
+          </div>
+        </section>
 
-        <button
-          type="button"
-          class="video-toggle"
-          id="video-toggle"
-          aria-label="Pause background video"
-        >
-          <span aria-hidden="true">⏸</span>
-        </button>
+        <section class="insurance-promo" aria-labelledby="promo-h" data-insurance>
+          <p class="eyebrow">Insurance services</p>
+          <h2 id="promo-h" data-cfg-text="insurance.promo.title">Need life or health insurance?</h2>
+          <p data-cfg-text="insurance.promo.text">Talk with a licensed agent. Quotes are free.</p>
+          <a class="button button-primary" href="#insurance" data-cfg-text="insurance.promo.cta">See your options</a>
+        </section>
 
-        <div class="lead-overlay">
-          <span class="category-badge">Local News</span>
-          <h1>Coryell County News, All in One Place.</h1>
-          <p>Follow county government, schools, public safety, local businesses, community events, and Texas headlines without digging through a dozen pages.</p>
-          <a class="button button-primary" href="#local-news">Read the latest</a>
-        </div>
-      </article>
-
-      <aside class="hero-sidebar">
-        <section class="quick-links">
+        <section class="quick-links" aria-labelledby="links-title">
           <p class="eyebrow">Useful Links</p>
-          <h2>Coryell County resources</h2>
+          <h2 id="links-title">Coryell County resources</h2>
           <ul>
             <li><a href="https://www.coryellcounty.org/" target="_blank" rel="noopener noreferrer">County website</a></li>
             <li><a href="https://www.txdot.gov/" target="_blank" rel="noopener noreferrer">TxDOT road conditions</a></li>
@@ -131,136 +162,184 @@
             <li><a href="https://www.tdem.texas.gov/" target="_blank" rel="noopener noreferrer">Emergency management</a></li>
           </ul>
         </section>
-      </aside>
-    </section>
-
-    <section class="content-section container" id="local-news">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Around the county</p>
-          <h2>Local News</h2>
-        </div>
-        <a href="#contact">Send a news tip</a>
       </div>
+    </div>
 
-      <div class="card-grid">
-        <article class="news-card">
-          <img src="https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=900&q=80" alt="Road construction sign">
-          <div class="card-body">
-            <span class="category-badge">Infrastructure</span>
-            <h3>Road and construction updates</h3>
-            <p>Use this card for TxDOT, county road, and city infrastructure headlines.</p>
-          </div>
-        </article>
+    <div class="container feed-status">
+      <p id="feed-status" role="status">Loading the latest headlines…</p>
+      <p id="feed-notice" class="feed-notice" hidden></p>
+    </div>
 
-        <article class="news-card">
-          <img src="https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=900&q=80" alt="School building">
-          <div class="card-body">
-            <span class="category-badge">Education</span>
-            <h3>School announcements</h3>
-            <p>Feature district news, closures, schedules, sports, and student achievements.</p>
-          </div>
-        </article>
-
-        <article class="news-card" id="public-safety">
-          <img src="https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?auto=format&fit=crop&w=900&q=80" alt="Emergency vehicle lights">
-          <div class="card-body">
-            <span class="category-badge">Public Safety</span>
-            <h3>Emergency and safety updates</h3>
-            <p>Display official notices from local law enforcement, fire departments, and emergency services.</p>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="split-section container">
-      <div class="texas-panel" id="texas-news">
-        <div class="section-heading compact">
+    <!-- Browse view: one section per topic. Replaced by #results while filtering. -->
+    <div id="browse">
+      <section class="content-section container" id="latest-local" aria-labelledby="latest-local-h">
+        <div class="section-heading">
           <div>
-            <p class="eyebrow">Across the state</p>
-            <h2>Latest Texas Headlines</h2>
+            <p class="eyebrow">Copperas Cove · Gatesville · Coryell County</p>
+            <h2 id="latest-local-h">Latest Local News</h2>
+          </div>
+          <a href="#contact">Send a news tip</a>
+        </div>
+        <div class="story-list" data-section="latest-local" data-empty="No recent local stories right now. Check back soon, or send us a tip."></div>
+      </section>
+
+      <div class="container place-grid">
+        <section id="copperas-cove" aria-labelledby="cove-h">
+          <h2 class="mini-heading" id="cove-h">Copperas Cove</h2>
+          <div class="story-list compact" data-section="copperas-cove" data-empty="No recent Copperas Cove stories."></div>
+        </section>
+        <section id="gatesville" aria-labelledby="gatesville-h">
+          <h2 class="mini-heading" id="gatesville-h">Gatesville</h2>
+          <div class="story-list compact" data-section="gatesville" data-empty="No recent Gatesville stories."></div>
+        </section>
+        <section id="coryell-county" aria-labelledby="county-h">
+          <h2 class="mini-heading" id="county-h">Coryell County</h2>
+          <div class="story-list compact" data-section="coryell-county" data-empty="No recent county-wide stories."></div>
+        </section>
+      </div>
+
+      <section class="content-section container" id="government" aria-labelledby="gov-h">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Your tax dollars</p>
+            <h2 id="gov-h">Government &amp; Taxpayer Accountability</h2>
           </div>
         </div>
+        <div class="story-list" data-section="government" data-empty="No recent government or taxpayer stories."></div>
+      </section>
 
-        <div class="headline-list" id="rss-news-list" aria-live="polite">
-          <article>
-            <span>Loading</span>
-            <h3>Fetching the latest headlines…</h3>
-          </article>
-        </div>
+      <div class="container two-col">
+        <section id="schools" aria-labelledby="schools-h">
+          <div class="section-heading compact"><div><p class="eyebrow">Classrooms &amp; campuses</p><h2 id="schools-h">Schools &amp; Education</h2></div></div>
+          <div class="story-list" data-section="schools" data-empty="No recent school stories."></div>
+        </section>
+        <section id="public-safety" aria-labelledby="safety-h">
+          <div class="section-heading compact"><div><p class="eyebrow">Alerts &amp; incidents</p><h2 id="safety-h">Public Safety</h2></div></div>
+          <div class="story-list" data-section="public-safety" data-empty="No recent public safety stories."></div>
+        </section>
       </div>
 
-      <aside class="complaint-card" id="complaint">
-        <span class="complaint-icon" aria-hidden="true">📣</span>
-        <p class="eyebrow">Community Voice</p>
-        <h2>Complaint of the Day</h2>
-        <blockquote>“Why is there still trash and old appliances dumped along county roads? It is an eyesore and a health concern.”</blockquote>
-        <p class="complaint-credit">Concerned Coryell County resident</p>
-        <div class="complaint-actions">
-          <a class="button button-primary" href="mailto:marimercruz8@gmail.com?subject=Complaint%20of%20the%20Day">Submit a complaint</a>
-          <a class="button button-dark" href="https://www.facebook.com/share/v/1DDG5HgbFg/" target="_blank" rel="noopener noreferrer">Watch on Facebook</a>
+      <section class="content-section container" id="elections" aria-labelledby="elections-h">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Local and Texas races</p>
+            <h2 id="elections-h">Elections</h2>
+          </div>
         </div>
-        <small>Submissions may be edited for length, clarity, and safety.</small>
-      </aside>
-    </section>
+        <div class="story-list" data-section="elections" data-empty="No recent election coverage."></div>
+      </section>
 
-    <section class="content-section container" id="election-watch">
+      <div class="container split-section">
+        <section id="texas" aria-labelledby="texas-h">
+          <div class="section-heading compact"><div><p class="eyebrow">Across the state</p><h2 id="texas-h">Texas Headlines</h2></div></div>
+          <p class="section-note">Official announcements are listed first, then news reports.</p>
+          <div class="story-list" data-section="texas" data-empty="No Texas headlines right now."></div>
+        </section>
+
+        <aside class="complaint-card" id="complaint">
+          <span class="complaint-icon" aria-hidden="true">📣</span>
+          <p class="eyebrow">Community Voice</p>
+          <h2>Complaint of the Day</h2>
+          <blockquote>“Why is there still trash and old appliances dumped along county roads? It is an eyesore and a health concern.”</blockquote>
+          <p class="complaint-credit">Concerned Coryell County resident</p>
+          <div class="complaint-actions">
+            <a class="button button-primary" href="mailto:marimercruz8@gmail.com?subject=Complaint%20of%20the%20Day">Submit a complaint</a>
+            <a class="button button-dark" href="https://www.facebook.com/share/v/1DDG5HgbFg/" target="_blank" rel="noopener noreferrer">Watch on Facebook</a>
+          </div>
+          <small>Submissions may be edited for length, clarity, and safety.</small>
+        </aside>
+      </div>
+
+      <section class="content-section container" id="community-news" aria-labelledby="community-h">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Neighbors &amp; events</p>
+            <h2 id="community-h">Community Updates</h2>
+          </div>
+        </div>
+        <div class="story-list" data-section="community" data-empty="No recent community stories."></div>
+      </section>
+    </div>
+
+
+    <!-- Filtered view -->
+    <section class="content-section container" id="results" aria-labelledby="results-h" hidden>
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Texas Midterms</p>
-          <h2>Election Watch</h2>
+          <p class="eyebrow">Filtered results</p>
+          <h2 id="results-h">Matching stories</h2>
         </div>
       </div>
-
-      <div class="headline-list" id="election-watch-list" aria-live="polite">
-        <article>
-          <span>Loading</span>
-          <h3>Fetching election coverage…</h3>
-        </article>
-      </div>
+      <div class="story-list" id="results-list"></div>
     </section>
 
-    <section class="scoop-blog" id="the-scoop">
+    <section class="insurance container" id="insurance" aria-labelledby="ins-h" data-insurance>
+      <p class="ins-label" data-cfg-text="insurance.sectionLabel">Business service from Marimer Cruz-Nieves. Not part of the news reporting above.</p>
+      <h2 id="ins-h">Life &amp; Health Insurance</h2>
+      <p class="ins-lead" data-cfg-text="insurance.lead">Life and health insurance can feel confusing. If you would like help understanding your options, you can start here. Quotes and consultations are free.</p>
+
+      <div class="ins-choices">
+        <article class="ins-card">
+          <h3 data-cfg-text="insurance.life.title">Life insurance</h3>
+          <p data-cfg-text="insurance.life.description">Learn how life insurance can help protect your family's finances.</p>
+          <a class="button button-primary" href="https://phoenixsecuritas.com/#products" target="_blank" rel="noopener noreferrer" data-cfg-href="insurance.life.url" data-cfg-text="insurance.life.cta">Explore Life Insurance</a>
+        </article>
+        <article class="ins-card">
+          <h3 data-cfg-text="insurance.health.title">Health insurance</h3>
+          <p data-cfg-text="insurance.health.description">Understand health coverage options, including marketplace plans and Medicare, with a person to guide you.</p>
+          <a class="button button-primary" href="https://phoenixsecuritas.com/#products" target="_blank" rel="noopener noreferrer" data-cfg-href="insurance.health.url" data-cfg-text="insurance.health.cta">Explore Health Insurance</a>
+        </article>
+      </div>
+
+      <h3 class="ins-steps-title">How it works</h3>
+      <ol class="ins-steps">
+        <li><strong>Discover.</strong> Choose life or health insurance above.</li>
+        <li><strong>Learn.</strong> <a href="https://phoenixsecuritas.com/insurance-101.html" target="_blank" rel="noopener noreferrer" data-cfg-href="insurance.learn.url" data-cfg-text="insurance.learn.label">Read Insurance 101</a> to understand the basics.</li>
+        <li><strong>Request help.</strong> <a href="https://phoenixsecuritas.com/#cta-heading" target="_blank" rel="noopener noreferrer" data-cfg-href="insurance.request.url" data-cfg-text="insurance.request.label">Request a free quote</a> on Phoenix Securitas.</li>
+        <li><strong>Talk to me.</strong> Reach out any way you like:</li>
+      </ol>
+
+      <ul class="ins-contact">
+        <li><a class="button button-dark" href="https://t.me/mcn1611" target="_blank" rel="noopener noreferrer" data-cfg-href="insurance.telegram.url" data-cfg-text="insurance.telegram.label">Message me on Telegram</a></li>
+        <li><a class="button button-dark" href="https://api.zybrzeus.com/calendar/mcruznieves" target="_blank" rel="noopener noreferrer" data-cfg-href="insurance.schedule.url" data-cfg-text="insurance.schedule.label">Schedule an appointment</a></li>
+        <li><a class="button button-dark" href="tel:+15123872748" data-cfg-href="insurance.phone.url" data-cfg-text="insurance.phone.label">Call (512) 387-2748</a></li>
+        <li><a class="button button-light-outline" href="https://tree.phoenixsecuritas.com" target="_blank" rel="noopener noreferrer" data-cfg-href="insurance.allLinks.url" data-cfg-text="insurance.allLinks.label">All my links</a></li>
+      </ul>
+
+      <p class="ins-fine"><strong data-cfg-text="insurance.agent">Marimer Cruz-Nieves, licensed insurance agent (Phoenix Securitas)</strong><br>
+        <span data-cfg-text="insurance.licenseLine">NPN: 21566471. Licensed in TX, FL, OH and NY.</span></p>
+      <p class="ins-fine"><a href="https://www.tdi.texas.gov/agent/agent-lookup.html" target="_blank" rel="noopener noreferrer" data-cfg-href="insurance.verify.url" data-cfg-text="insurance.verify.label">Verify the license with the Texas Department of Insurance</a></p>
+        <p class="ins-fine ins-disclosure" data-cfg-text="insurance.disclosure">Insurance products and services are offered through Phoenix Securitas Premium. Marimer Cruz-Nieves is a licensed insurance agent (NPN: 21566471) in the states of Texas, Florida, Ohio, and New York, regulated by the respective state department of insurance in each licensed state. The information on this website is for educational purposes only and does not constitute legal, tax, investment, or financial advice. Product availability, rates, and benefits vary by carrier, state, and individual circumstances. Enrollment in any plan is subject to eligibility requirements and policy terms and conditions. For Medicare products, we do not offer every plan available in your area. Please contact Medicare.gov or 1-800-MEDICARE for information on all available plans.</p>
+        <p class="ins-fine" data-cfg-text="insurance.privacyNote">Please do not send medical or health details through this website, email, social media or text. Share those privately with your agent on a call or during secure enrollment.</p>
+    </section>
+
+    <section class="scoop-blog" id="the-scoop" aria-labelledby="scoop-h">
       <div class="container scoop-blog-grid">
         <div class="scoop-intro">
-          <img src="mari-and-dog.jpeg" alt="Mari smiling while holding her black French bulldog">
+          <img src="mari-and-dog.jpeg" width="190" height="245" loading="lazy" alt="Mari smiling while holding her black French bulldog">
           <div>
             <p class="eyebrow light">Inside the Messenger</p>
-            <h2>The Coryell County Scoop</h2>
-            <p>This is the personality and blog section of the site. Use it for commentary, community spotlights, insurance education, videos, opinion, and stories that sound like you.</p>
+            <h2 id="scoop-h">The Coryell County Scoop</h2>
+            <p>This is the personality and commentary side of the site: community spotlights, opinion, and stories in Mari's own voice. It is kept separate from the automatically gathered news above, and anything here is labeled as commentary.</p>
             <a class="button button-light" href="https://www.facebook.com/groups/255196943007202" target="_blank" rel="noopener noreferrer">Join the Facebook group</a>
           </div>
         </div>
 
-        <div class="scoop-posts">
-          <article>
-            <span>From Mari</span>
-            <h3>What Coryell County is talking about today</h3>
-            <p>A short, conversational post can live here and link to the full article or Facebook discussion.</p>
-            <a href="#">Read the Scoop →</a>
-          </article>
-
-          <article>
-            <span>Community Spotlight</span>
-            <h3>Neighbors helping neighbors</h3>
-            <p>Feature local volunteers, small businesses, churches, schools, and community organizations.</p>
-            <a href="#">Read the story →</a>
-          </article>
-
-          <article>
-            <span>Explained Simply</span>
-            <h3>What this local issue actually means</h3>
-            <p>Break down complicated county, state, insurance, or public policy topics in plain language.</p>
-            <a href="#">Read the explainer →</a>
-          </article>
+        <div class="how-it-works">
+          <h3>How the news sections work</h3>
+          <p>Headlines are collected automatically every few minutes from local newspapers, TV stations and official government sources. Each item links to the original publisher. Items marked <strong>Government announcement</strong> come directly from a government agency: useful information, but not independent reporting. Items marked <strong>News report</strong> are published reporting from the outlet named. Original investigations by The Coryell County Scoop, when published, are marked <strong>Coryell County Scoop original reporting</strong> and kept separate from this automatic feed.</p>
+          <details id="source-health">
+            <summary>Source status</summary>
+            <ul id="source-health-list"></ul>
+          </details>
         </div>
       </div>
     </section>
 
-    <section class="community-section container" id="community">
+    <section class="community-section container" id="community" aria-labelledby="community-cta-h">
       <div>
         <p class="eyebrow">Built with the community</p>
-        <h2>Got a story, event, photo, or concern?</h2>
+        <h2 id="community-cta-h">Got a story, event, photo, or concern?</h2>
         <p>Send information from Copperas Cove, Gatesville, Evant, Oglesby, Jonesboro, Coryell City, Osage, and the surrounding communities.</p>
       </div>
       <a class="button button-dark" href="mailto:marimercruz8@gmail.com?subject=News%20Tip%20for%20The%20Coryell%20County%20Messenger">Send a news tip</a>
@@ -291,6 +370,9 @@
     </div>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="feed-build.js" defer></script>
+  <script src="feed-source.js" defer></script>
+  <script src="news-logic.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>

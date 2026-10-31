@@ -1,0 +1,11 @@
+const { chromium } = require("C:/Users/insur/hg-verify/node_modules/playwright-core");
+const http = require("http"), fs = require("fs"), path = require("path");
+const root = "C:/Users/insur/CORYELLCOUNTYSCOOP"; const body = fs.readFileSync(process.argv[2], "utf8");
+const srv = http.createServer((q, r) => { let p = path.join(root, q.url === "/" ? "index.html" : q.url.split("?")[0]); fs.readFile(p, (e, d) => { if (e) { r.statusCode = 404; return r.end(); } r.setHeader("Content-Type", p.endsWith(".js") ? "text/javascript" : p.endsWith(".css") ? "text/css" : "text/html"); r.end(d); }); }).listen(8768);
+(async () => { const b = await chromium.launch(); for (const w of [375, 1280]) { const pg = await b.newPage({ viewport: { width: w, height: 900 } });
+ await pg.route("https://coryell-county-rss.truewolfflix777.workers.dev**", (rt) => rt.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body }));
+ await pg.goto("http://localhost:8768/", { waitUntil: "networkidle" });
+ console.log("--- width", w);
+ console.log("SMALL TARGETS (<44px tall):", JSON.stringify(await pg.evaluate(() => { const o = {}; document.querySelectorAll("a,button,input,select,summary").forEach((e) => { if (!e.offsetParent) return; const r = e.getBoundingClientRect(); if (r.height < 44 && r.width > 0) { const k = (e.closest("nav,footer,header,main,aside,form")?.tagName || "?") + " h=" + Math.round(r.height) + " :" + ((e.textContent || e.getAttribute("aria-label") || "").trim().slice(0, 22)); o[k] = 1; } }); return Object.keys(o).slice(0, 14); }), null, 0));
+ console.log("NEW-TAB LINKS w/o notice:", JSON.stringify(await pg.evaluate(() => [...document.querySelectorAll("a[target=_blank]")].filter((a) => !a.querySelector(".visually-hidden") && !a.getAttribute("aria-label") && !/opens in/i.test(a.textContent)).map((a) => (a.closest("nav,footer,header,main,aside")?.tagName || "?") + ":" + a.textContent.trim().slice(0, 25)).slice(0, 8))));
+ await pg.close(); } await b.close(); srv.close(); })();

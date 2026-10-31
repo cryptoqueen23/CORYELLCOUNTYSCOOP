@@ -1,2 +1,5 @@
 .wrangler/
 node_modules/
+.wrangler-test/
+wrangler.test.local.toml
+*.jsonl
