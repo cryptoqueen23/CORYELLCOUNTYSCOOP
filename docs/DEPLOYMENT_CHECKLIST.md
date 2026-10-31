@@ -16,7 +16,7 @@ below that touches Cloudflare or Vercel needs Mari's explicit approval first.
 | Not stated by Cloudflare | Whether cron invocations count toward the 100,000 requests/day (about 720/day if so) | docs silent |
 | Worker in the real runtime | Test Worker run locally in Cloudflare's runtime (`workerd` via `wrangler dev`): 5 cron runs filled all 17 sources, 16 healthy, no errors. Local CPU **cannot** be measured meaningfully (process readings include network and logging overhead) | Needs a trial deploy |
 | Insurance links | 5 of 6 external links return HTTP 200 and every in-page anchor exists (see below) | HTTP checks and browser click-through |
-| Licence and disclosure text | Copied word for word from phoenixsecuritas.com (legal page and home page footer): Phoenix Securitas Premium, NPN: 21566471, TX, FL, OH, NY, educational-purposes disclaimer, Medicare plan-availability disclaimer with Medicare.gov and 1-800-MEDICARE | live site |
+| Licence and disclosure text | Copied word for word from phoenixsecuritas.com (legal page and home page footer): Phoenix Securitas Premium, NPN: 21566471, TX, FL, OH, educational-purposes disclaimer, Medicare plan-availability disclaimer with Medicare.gov and 1-800-MEDICARE | live site |
 | "Free quote" / "free consultation" claims | Both appear on phoenixsecuritas.com | live site |
 | NIPR licence lookup link | `pnc.nipr.com` does **not resolve** (DNS failure from two separate environments). That is the link Phoenix Securitas itself uses, so it may be dead on your own site too. Left off this site | see "Decisions for Mari" |
 

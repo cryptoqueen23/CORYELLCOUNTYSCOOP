@@ -19,7 +19,7 @@ quote, CRM or booking system.
 | Appointment booking | api.zybrzeus.com/calendar/mcruznieves | "Schedule an appointment" |
 | Phone (512) 387-2748 | provided by Mari 2026-10-29; also on phoenixsecuritas.com | "Call" |
 | Linktree hub | tree.phoenixsecuritas.com | "All my links" (also in footer, as before) |
-| License | NPN 21566471; TX, FL, OH, NY (from the Linktree footer) | Disclosure line |
+| License | NPN 21566471; TX, FL, OH (NY license expired and removed 2026-10-31) | Disclosure line |
 
 Not used: `mariscrm` (the audience CRM). Visitors go to Phoenix Securitas instead.
 Nothing in the existing flywheel was removed or replaced. The site previously had

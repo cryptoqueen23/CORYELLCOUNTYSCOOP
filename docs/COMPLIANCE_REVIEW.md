@@ -8,8 +8,8 @@ approval from Mari and, where required, her agency or compliance contact.
 
 | Text | File and key | Source |
 |---|---|---|
-| Full disclosure paragraph (Phoenix Securitas Premium, NPN: 21566471, licensed in Texas, Florida, Ohio and New York, educational-purposes statement, carrier and state variability, eligibility, **Medicare plan-availability statement with Medicare.gov and 1-800-MEDICARE**) | `site-config.json` `insurance.disclosure`, and the same default in `index.html` | Word for word from phoenixsecuritas.com (legal page and home page footer), copied 2026-10-29 |
-| License line "NPN: 21566471. Licensed in TX, FL, OH and NY." | `insurance.licenseLine` | phoenixsecuritas.com license strip |
+| Full disclosure paragraph (Phoenix Securitas Premium, NPN: 21566471, licensed in Texas, Florida and Ohio, educational-purposes statement, carrier and state variability, eligibility, **Medicare plan-availability statement with Medicare.gov and 1-800-MEDICARE**) | `site-config.json` `insurance.disclosure`, and the same default in `index.html` | Word for word from phoenixsecuritas.com (legal page and home page footer), copied 2026-10-29 |
+| License line "NPN: 21566471. Licensed in TX, FL and OH." | `insurance.licenseLine` | phoenixsecuritas.com license strip |
 | "Quotes and consultations are free" / "Quotes are free" | `insurance.lead`, `insurance.promo.text` | phoenixsecuritas.com says "Free quote" and "Free consultation" |
 
 ## Specific points for the reviewer

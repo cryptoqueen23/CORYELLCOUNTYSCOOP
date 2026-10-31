@@ -5,7 +5,7 @@
     "sectionLabel": "Business service from Marimer Cruz-Nieves. Not part of the news reporting above.",
     "lead": "Life and health insurance can feel confusing. If you would like help understanding your options, you can start here. Quotes and consultations are free.",
     "agent": "Marimer Cruz-Nieves, licensed insurance agent (Phoenix Securitas)",
-    "licenseLine": "NPN: 21566471. Licensed in TX, FL, OH and NY.",
+    "licenseLine": "NPN: 21566471. Licensed in TX, FL and OH.",
     "privacyNote": "Please do not send medical or health details through this website, email, social media or text. Share those privately with your agent on a call or during secure enrollment.",
     "life": {
       "title": "Life insurance",
@@ -48,7 +48,7 @@
       "text": "Talk with a licensed agent. Quotes are free.",
       "cta": "See your options"
     },
-    "disclosure": "Insurance products and services are offered through Phoenix Securitas Premium. Marimer Cruz-Nieves is a licensed insurance agent (NPN: 21566471) in the states of Texas, Florida, Ohio, and New York, regulated by the respective state department of insurance in each licensed state. The information on this website is for educational purposes only and does not constitute legal, tax, investment, or financial advice. Product availability, rates, and benefits vary by carrier, state, and individual circumstances. Enrollment in any plan is subject to eligibility requirements and policy terms and conditions. For Medicare products, we do not offer every plan available in your area. Please contact Medicare.gov or 1-800-MEDICARE for information on all available plans.",
+    "disclosure": "Insurance products and services are offered through Phoenix Securitas Premium. Marimer Cruz-Nieves is a licensed insurance agent (NPN: 21566471) in the states of Texas, Florida, and Ohio, regulated by the respective state department of insurance in each licensed state. The information on this website is for educational purposes only and does not constitute legal, tax, investment, or financial advice. Product availability, rates, and benefits vary by carrier, state, and individual circumstances. Enrollment in any plan is subject to eligibility requirements and policy terms and conditions. For Medicare products, we do not offer every plan available in your area. Please contact Medicare.gov or 1-800-MEDICARE for information on all available plans.",
     "disclosureSource": "Wording copied from phoenixsecuritas.com (legal page and home page footer) on 2026-10-29. Keep it in step with that site.",
     "verify": {
       "label": "Verify the license with the Texas Department of Insurance",

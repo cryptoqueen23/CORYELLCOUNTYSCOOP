@@ -69,7 +69,7 @@ test("insurance can be switched off without touching code", () => {
 
 test("the full disclosure matches the required elements and accompanies any Medicare mention", () => {
   const d = config.insurance.disclosure;
-  for (const part of ["Phoenix Securitas Premium", "NPN: 21566471", "Texas, Florida, Ohio, and New York", "educational purposes only", "1-800-MEDICARE", "Medicare.gov"]) {
+  for (const part of ["Phoenix Securitas Premium", "NPN: 21566471", "Texas, Florida, and Ohio", "educational purposes only", "1-800-MEDICARE", "Medicare.gov"]) {
     assert.ok(d.includes(part), "disclosure missing: " + part);
   }
   const mentionsMedicare = Object.values(config.insurance).some((v) => typeof v === "object" && JSON.stringify(v).includes("Medicare"));
