@@ -479,6 +479,8 @@ button { font: inherit; }
   max-width: 760px;
   color: var(--muted);
 }
+.tip-alt { font-size: 0.95rem; }
+.tip-alt a { color: var(--navy); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 
 .site-footer {
   padding-top: 44px;
