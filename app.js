@@ -1,4 +1,9 @@
+// The news feed is a static file published by the GitHub Actions collector (docs/ACTIONS_MIGRATION.md).
+// The Cloudflare Worker is a temporary fallback; FeedSource picks the freshest valid copy.
+const STATIC_FEED_URL = "https://raw.githubusercontent.com/cryptoqueen23/CORYELLCOUNTYSCOOP/data/news.json";
 const RSS_WORKER_URL = "https://coryell-county-rss.truewolfflix777.workers.dev";
+const FEED_URLS = [STATIC_FEED_URL, RSS_WORKER_URL];
+const FEED_TIMEOUT_MS = 6000; // per request, so a slow static file cannot hold the page back for long
 
 const SNAPSHOT_STORAGE_KEY = "messenger-snapshot-v2";
 const STALE_SNAPSHOT_MINUTES = 60;
@@ -59,6 +64,12 @@ function writeSaved(snapshot) {
   } catch (error) {
     // Storage can be unavailable (private mode, full); the page works without it.
   }
+}
+
+async function fetchFeedJson(url, signal) {
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
 }
 
 async function fetchJson(url) {
@@ -376,10 +387,13 @@ function showLoadError() {
 
 async function loadHeadlines() {
   try {
-    let snapshot = await fetchJson(RSS_WORKER_URL);
-    if (snapshot && snapshot.schema === 3) snapshot = window.FeedBuild.build(snapshot, Date.now());
-    else if (snapshot && snapshot.schema !== 2) snapshot = logic.adaptLegacySnapshot(snapshot);
-    if (!snapshot || snapshot.schema !== 2) throw new Error("Unexpected response");
+    const { snapshot } = await window.FeedSource.loadFeed(
+      FEED_URLS,
+      fetchFeedJson,
+      { build: window.FeedBuild.build, adaptLegacy: logic.adaptLegacySnapshot },
+      Date.now(),
+      { timeoutMs: FEED_TIMEOUT_MS }
+    );
     writeSaved(snapshot);
     showSnapshot(snapshot, { fromSavedCopy: false });
   } catch (error) {

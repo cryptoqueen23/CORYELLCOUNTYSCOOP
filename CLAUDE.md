@@ -19,6 +19,9 @@ fully automatic (see `docs/MODERNIZATION.md`).
 
 ## Where things live
 
+- `collector/` + `.github/workflows/collect-news.yml` — GitHub Actions collector that publishes `news.json` on the `data` branch;
+  the site reads it through `feed-source.js` (the Cloudflare Worker is only a temporary fallback). Design, deploy and rollback:
+  `docs/ACTIONS_MIGRATION.md`. The source registry and parsing code below are shared by both.
 - `rss-worker/` — Cloudflare Worker that aggregates sources into one JSON
   snapshot. Source registry: `rss-worker/lib/sources.js`, documented in
   `rss-worker/SOURCES.md` (read it before adding or re-researching sources,
@@ -50,6 +53,7 @@ fully automatic (see `docs/MODERNIZATION.md`).
 - **Never insert feed HTML into the page.** Feed text is reduced to plain text in
   the Worker (`cleanText`) and rendered with `textContent` in the browser.
 - **Outbound fetches are restricted** to hosts in `lib/sources.js`.
+- **`data` branch is machine-written** by the collector; never edit it by hand and never let it build on Vercel (`vercel.json`).
 - **Worker and site deploy separately, as a pair.** The schema 3 Worker breaks
   the old site, so deploy the SITE first (the new site reads every format), then
   the Worker; roll back the Worker first. See `docs/COORDINATED_DEPLOY.md`.
