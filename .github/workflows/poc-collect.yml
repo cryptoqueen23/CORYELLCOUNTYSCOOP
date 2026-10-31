@@ -1,0 +1,60 @@
+# Proof-of-concept only. Runs on pushes to this scratch branch (scheduled workflows only run on the default
+# branch, so the 15-minute cron is NOT exercised here). Reads public feeds, writes news.json and reports
+# to the scratch data branch. No secrets are used or printed.
+name: poc-collect
+on:
+  push:
+    branches: [scratch/actions-poc]
+  workflow_dispatch: {}
+concurrency:
+  group: poc-collect
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: write   # only to commit to the scratch DATA branch
+    env:
+      DATA_BRANCH: scratch/actions-poc-data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DATA_BRANCH }}
+          path: data
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Collect all sources (real run, normal state handling)
+        run: |
+          node poc-actions/collect.mjs --state data/news.json --out data/news.json \
+            --report data/reports/run-${{ github.run_id }}-${{ github.run_attempt }}.json
+      - name: Failure test (copy of state; two sources forced to fail; NOT published)
+        run: |
+          node poc-actions/collect.mjs --state data/news.json --out "$RUNNER_TEMP/failure-test.json" \
+            --report data/reports/failtest-${{ github.run_id }}-${{ github.run_attempt }}.json \
+            --force --block=leader-press,kwtx --no-retry
+      - name: Is the Worker still reachable (read-only GET, status only)
+        run: |
+          curl -s -o /dev/null -m 15 -w "worker HTTP %{http_code} in %{time_total}s\n" https://coryell-county-rss.truewolfflix777.workers.dev/ || true
+      - name: Commit to the data branch (ordinary commit, no history rewrite)
+        working-directory: data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -q -m "poc run ${{ github.run_id }}.${{ github.run_attempt }}"
+          git push -q origin HEAD:${{ env.DATA_BRANCH }}
+      - name: Summary
+        run: |
+          node -e '
+          const fs=require("fs");const f=fs.readdirSync("data/reports").filter(n=>n.startsWith("run-${{ github.run_id }}-${{ github.run_attempt }}"))[0];
+          const r=JSON.parse(fs.readFileSync("data/reports/"+f));
+          let s="| source | result | fetch ms | raw items | dated | newest article | saved before→after |\n|---|---|---|---|---|---|---|\n";
+          for(const x of r.results)s+=`| ${x.id} | ${x.fetchResult}${x.retried?" (after retry)":""} | ${x.fetchMs} | ${x.rawItems} | ${x.rawDated} | ${x.newestArticlePubDate||"-"} | ${x.savedBefore}→${x.savedAfter} |\n`;
+          s+=`\nwall ${r.collectorWallMs} ms, cpu ${r.collectorCpuMs} ms, ${r.sourcesOk}/${r.sourcesTotal} ok, node ${r.node}\n`;
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,s);'
