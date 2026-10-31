@@ -37,6 +37,9 @@ jobs:
           node poc-actions/collect.mjs --state=data/news.json --out="$RUNNER_TEMP/failure-test.json" \
             --report=data/reports/failtest-${{ github.run_id }}-${{ github.run_attempt }}.json \
             --force --block=leader-press,kwtx --no-retry
+      - name: Probe (fetch ALL 15 sources regardless of schedule; for reliability sampling; NOT published)
+        run: |
+          node poc-actions/collect.mjs --state="$RUNNER_TEMP/none.json" --out="$RUNNER_TEMP/probe.json"             --report=data/reports/probe-${{ github.run_id }}-${{ github.run_attempt }}.json --force --no-retry
       - name: Is the Worker still reachable (read-only GET, status only)
         run: |
           curl -s -o /dev/null -m 15 -w "worker HTTP %{http_code} in %{time_total}s\n" https://coryell-county-rss.truewolfflix777.workers.dev/ || true
