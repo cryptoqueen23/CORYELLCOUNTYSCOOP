@@ -40,6 +40,14 @@ jobs:
       - name: Probe (fetch ALL 15 sources regardless of schedule; for reliability sampling; NOT published)
         run: |
           node poc-actions/collect.mjs --state="$RUNNER_TEMP/none.json" --out="$RUNNER_TEMP/probe.json"             --report=data/reports/probe-${{ github.run_id }}-${{ github.run_attempt }}.json --force --no-retry
+      - name: SOS 403 diagnostic (status and short error body only; honest user agent; official hosts)
+        run: |
+          UA="Mozilla/5.0 (compatible; CoryellCountyMessengerBot/2.0; +https://www.coryellcountyhub.xyz/)"
+          for u in https://www.sos.state.tx.us/rss/press.xml https://www.sos.texas.gov/rss/press.xml https://www.sos.texas.gov/about/newsreleases/index.shtml https://www.sos.texas.gov/robots.txt; do
+            code=$(curl -s -m 20 -A "$UA" -H "Accept: application/rss+xml, text/xml, */*" -o "$RUNNER_TEMP/b" -w "%{http_code}" "$u" || true)
+            echo "$u -> HTTP $code; body: $(head -c 160 "$RUNNER_TEMP/b" | tr '
+' ' ' | sed 's/[0-9]\{3,\}/N/g')"
+          done
       - name: Is the Worker still reachable (read-only GET, status only)
         run: |
           curl -s -o /dev/null -m 15 -w "worker HTTP %{http_code} in %{time_total}s\n" https://coryell-county-rss.truewolfflix777.workers.dev/ || true
