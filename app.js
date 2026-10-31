@@ -123,14 +123,19 @@ async function latestObservation(stationsUrl) {
   return null;
 }
 
-async function loadWeather() {
-  const container = document.querySelector("#weather-content");
+// Approximate coordinates of the places that get a weather card.
+const WEATHER_PLACES = [
+  { container: "#weather-content", lat: 31.4352, lon: -97.7439 }, // Gatesville, Texas
+  { container: "#weather-content-cove", lat: 31.1241, lon: -97.9031 }, // Copperas Cove, Texas
+];
+
+async function loadWeather(place) {
+  const container = document.querySelector(place.container);
   if (!container) return;
 
   const nodes = [];
   try {
-    // Approximate coordinates for Gatesville, Texas.
-    const point = await fetchJson("https://api.weather.gov/points/31.4352,-97.7439");
+    const point = await fetchJson(`https://api.weather.gov/points/${place.lat},${place.lon}`);
     const { forecast: forecastUrl, observationStations: stationsUrl } = point.properties;
 
     const [forecastResult, observationResult] = await Promise.allSettled([
@@ -175,7 +180,7 @@ async function loadWeather() {
   if (!nodes.length) {
     const message = el("p", "", "Local weather is temporarily unavailable. ");
     const link = el("a", "", "View the National Weather Service");
-    link.href = "https://forecast.weather.gov/MapClick.php?lat=31.4352&lon=-97.7439";
+    link.href = `https://forecast.weather.gov/MapClick.php?lat=${place.lat}&lon=${place.lon}`;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     message.append(link);
@@ -432,7 +437,7 @@ document.querySelector("#reset-filters").addEventListener("click", () => {
 // ---- Start ------------------------------------------------------------------
 
 document.querySelector("#year").textContent = new Date().getFullYear();
-loadWeather();
+WEATHER_PLACES.forEach(loadWeather);
 loadHeadlines();
 
 // Tell assistive technology which links open a new tab. Runs again whenever the page content changes
