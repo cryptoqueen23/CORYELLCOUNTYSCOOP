@@ -30,12 +30,12 @@ jobs:
           node-version: 22
       - name: Collect all sources (real run, normal state handling)
         run: |
-          node poc-actions/collect.mjs --state data/news.json --out data/news.json \
-            --report data/reports/run-${{ github.run_id }}-${{ github.run_attempt }}.json
+          node poc-actions/collect.mjs --state=data/news.json --out=data/news.json \
+            --report=data/reports/run-${{ github.run_id }}-${{ github.run_attempt }}.json
       - name: Failure test (copy of state; two sources forced to fail; NOT published)
         run: |
-          node poc-actions/collect.mjs --state data/news.json --out "$RUNNER_TEMP/failure-test.json" \
-            --report data/reports/failtest-${{ github.run_id }}-${{ github.run_attempt }}.json \
+          node poc-actions/collect.mjs --state=data/news.json --out="$RUNNER_TEMP/failure-test.json" \
+            --report=data/reports/failtest-${{ github.run_id }}-${{ github.run_attempt }}.json \
             --force --block=leader-press,kwtx --no-retry
       - name: Is the Worker still reachable (read-only GET, status only)
         run: |
