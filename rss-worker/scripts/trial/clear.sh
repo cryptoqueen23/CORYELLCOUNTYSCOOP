@@ -1,6 +1,6 @@
 #!/bin/bash
 # clears ONLY the test namespace
-NS=56dad1a91fef4dbfa56b906e7badd005
+NS="${1:?usage: clear.sh <test KV namespace id>}"  # never commit the id
 cd /c/Users/insur/CORYELLCOUNTYSCOOP/rss-worker
 KEYS=$(npx wrangler@4 kv key list --namespace-id $NS --remote 2>/dev/null | grep '"name"' | sed 's/.*"name": "\(.*\)".*/\1/')
 echo "[" > /tmp/keys.json; first=1

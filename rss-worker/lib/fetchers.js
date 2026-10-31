@@ -2,7 +2,7 @@
 // ({ title, link, pubDate, publisher, summary }) or throws. Source failures are
 // isolated by the caller.
 
-import { cleanText, decodeEntities, parseDate, parseFeed, safeUrl } from "./parse.js";
+import { cleanText, decodeEntities, isFarFutureDate, parseDate, parseFeed, safeUrl } from "./parse.js";
 import { isAllowedHost } from "./sources.js";
 
 const USER_AGENT = "Mozilla/5.0 (compatible; CoryellCountyMessengerBot/2.0; +https://www.coryellcountyhub.xyz/)";
@@ -143,6 +143,7 @@ async function fetchGatesville(source, now, options = {}) {
       title: cleanText(item.title),
       link: safeUrl(item.link, "https://www.gatesvilletx.com"),
       pubDate: parseDate(item.date, now),
+      futureDated: isFarFutureDate(item.date, now),
       publisher: "",
       summary: cleanText(item.brief || "", 200),
     }))
@@ -184,7 +185,7 @@ async function fetchAttorneyGeneral(source, now, options = {}) {
     const link = safeUrl(titleMatch[1], "https://www.texasattorneygeneral.gov");
     const title = cleanText(decodeEntities(titleMatch[2]));
     if (link && title) {
-      items.push({ title, link, pubDate: parseDate(dateMatch?.[1], now), publisher: "", summary: "" });
+      items.push({ title, link, pubDate: parseDate(dateMatch?.[1], now), futureDated: isFarFutureDate(dateMatch?.[1], now), publisher: "", summary: "" });
     }
   }
 

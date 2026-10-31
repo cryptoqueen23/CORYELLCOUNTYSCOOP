@@ -68,3 +68,23 @@ test("the gathered time is the collector's run time, not the newest article date
   const { snapshot } = normalizeFeed(raw, { build, adaptLegacy: logic.adaptLegacySnapshot }, NOW);
   assert.equal(snapshot.generatedAt, "2026-10-31T11:30:00.000Z");
 });
+
+test("fallback end to end: the legacy Worker's 2028 story never reaches the page", async () => {
+  const bad = { updated: new Date(NOW - 5 * 60000).toISOString(), stories: [{ title: "Old release", link: "http://sos.example/2014", source: "SOS", pubDate: "2028-07-28T19:37:00.000Z" }, { title: "Real", link: "https://x.example/r", source: "S", pubDate: new Date(NOW - 3600000).toISOString() }] };
+  const r = await loadFeed([S, W], fetcher({ [S]: new Error("HTTP 404"), [W]: bad }), deps, NOW);
+  assert.deepEqual(r.snapshot.stories.map((s) => s.title), ["Real"]);
+});
+
+test("workflow disabled: the last static file keeps being used until it is 150 minutes old, then the fallback takes over", async () => {
+  for (const [age, expected, workerCalls] of [[10, S, 0], [149, S, 0], [151, W, 1]]) {
+    const log = [];
+    const r = await loadFeed([S, W], fetcher({ [S]: feed3(age), [W]: legacy(1) }, log), deps, NOW);
+    assert.equal(r.url, expected, `static file ${age} min old`);
+    assert.equal(log.filter((u) => u === W).length, workerCalls);
+  }
+});
+
+test("workflow disabled and the Worker retired: the stale static file is still shown (the page's own stale warning covers it)", async () => {
+  const r = await loadFeed([S], fetcher({ [S]: feed3(60 * 24) }), deps, NOW);
+  assert.equal(r.url, S);
+});

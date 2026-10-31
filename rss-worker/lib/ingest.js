@@ -104,6 +104,7 @@ export function ingest(previousText, outcome, source, now, options = {}) {
 
   const firstSeen = new Map(previous ? previous.items.map((item) => [item.link, item.fs]) : []);
   const items = outcome.items
+    .filter((raw) => !raw.futureDated) // a publisher date more than a day ahead means a bad feed clock: not news
     .map((raw) => prepareItem(raw, source, options))
     .filter((item) => item && !(item.pubDate && now - Date.parse(item.pubDate) > source.maxAgeDays * DAY))
     // An item whose source gave no date is labelled with when we first saw it, never a made-up date.

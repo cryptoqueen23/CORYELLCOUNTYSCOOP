@@ -115,3 +115,26 @@ test("an old-format Worker response is adapted instead of failing", () => {
   assert.equal(out.stories[0].location, "texas");
   assert.equal(L.adaptLegacySnapshot({}), null);
 });
+
+test("the legacy Worker fallback drops future-dated, pre-2010, unreadable-date and non-http stories and never rewrites a real date", () => {
+  const NOW_MS = Date.parse("2026-10-31T12:00:00Z");
+  const mk = (title, link, pubDate) => ({ title, link, source: "S", pubDate });
+  const out = L.adaptLegacySnapshot(
+    {
+      updated: "2026-10-31T11:00:00Z",
+      stories: [
+        mk("Good", "https://x.example/good", "2026-10-30T09:00:00Z"),
+        mk("Undated", "https://x.example/undated", null),
+        mk("Slightly ahead", "https://x.example/ahead", "2026-10-31T20:00:00Z"),
+        mk("Year 2028", "http://www.sos.state.tx.us/about/newsreleases/2014/072414.shtml", "2028-07-28T19:37:00.000Z"),
+        mk("Year 2001", "https://x.example/old", "2001-12-01T00:00:00Z"),
+        mk("Garbage date", "https://x.example/garbage", "not a date"),
+        mk("Script link", "javascript:alert(1)", "2026-10-30T09:00:00Z"),
+      ],
+    },
+    NOW_MS,
+  );
+  assert.deepEqual(out.stories.map((s) => s.title), ["Good", "Undated", "Slightly ahead"]);
+  assert.equal(out.stories[0].pubDate, "2026-10-30T09:00:00Z");
+  assert.equal(out.stories[1].pubDate, null);
+});

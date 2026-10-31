@@ -84,6 +84,34 @@ const check = (name, ok, detail = "") => {
   check("everything down and nothing saved: error message", /temporarily unavailable|could not be loaded/i.test(await r.page.innerText("body")));
   await ctx.close();
 
+  // 6. Workflow disabled: the last static file is 30 min old -> still used, Worker never asked.
+  const aged = (minutes) => {
+    const f = JSON.parse(realFeed);
+    f.tick = { ...f.tick, at: new Date(Date.now() - minutes * 60000).toISOString(), t: new Date(Date.now() - minutes * 60000).toISOString() };
+    return JSON.stringify(f);
+  };
+  ctx = await browser.newContext();
+  r = await open(ctx, { static: json(aged(30)), worker: json(legacy) }, "Headlines updated");
+  check("disabled workflow, file 30 min old: static file still used, Worker not asked", r.hits.worker === 0 && !/Legacy Worker headline/.test(await r.page.innerText("body")), `worker hits ${r.hits.worker}`);
+  await ctx.close();
+
+  // 7. File 200 min old (past the 150 min window): the Worker takes over.
+  ctx = await browser.newContext();
+  r = await open(ctx, { static: json(aged(200)), worker: json(legacy) }, "Legacy Worker headline");
+  check("disabled workflow, file 200 min old: Worker takes over", r.hits.worker === 1 && /Legacy Worker headline/.test(await r.page.innerText("body")));
+  await ctx.close();
+
+  // 8. Fallback with the old Worker's bad data: the 2028-dated story and a javascript: link never appear.
+  const badLegacy = JSON.stringify({ updated: new Date().toISOString(), stories: [
+    { title: "Legacy Worker headline", link: "https://example.com/legacy", source: "Texas Test", pubDate: new Date().toISOString(), official: true },
+    { title: "Reminder from Secretary of State FUTURE STORY", link: "http://www.sos.state.tx.us/about/newsreleases/2014/072414.shtml", source: "Texas Secretary of State", pubDate: "2028-07-28T19:37:00.000Z", official: true },
+    { title: "Script link story", link: "javascript:alert(1)", source: "X", pubDate: new Date().toISOString() }] });
+  ctx = await browser.newContext();
+  r = await open(ctx, { static: status(404), worker: json(badLegacy) }, "Legacy Worker headline");
+  const t8 = await r.page.innerText("body");
+  check("fallback hides the 2028-dated story and the script link", !/FUTURE STORY/.test(t8) && !/Script link story/.test(t8));
+  await ctx.close();
+
   await browser.close();
   server.close();
   console.log(results.every(Boolean) ? "\nALL PASS" : "\nFAILURES");

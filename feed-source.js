@@ -43,7 +43,7 @@
     } else if (raw && raw.schema === 2) {
       snapshot = raw;
     } else {
-      snapshot = deps.adaptLegacy(raw);
+      snapshot = deps.adaptLegacy(raw, now);
     }
     if (!snapshot || snapshot.schema !== 2 || !Array.isArray(snapshot.stories)) throw new Error("unexpected response");
     var gathered = Date.parse(snapshot.generatedAt);

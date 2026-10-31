@@ -72,19 +72,32 @@ const FUTURE_TOLERANCE_MS = 10 * 60 * 1000;
 // implausible (far past, or in the future — a bad feed clock must never push a
 // story to the top).
 export function parseDate(raw, now = Date.now()) {
-  if (!raw) return null;
+  const time = parseTime(raw);
+  if (Number.isNaN(time)) return null;
+  const parsed = new Date(time);
+  if (parsed.getUTCFullYear() < MIN_YEAR) return null;
+  if (time > now + FUTURE_TOLERANCE_MS) return null;
+  return parsed.toISOString();
+}
+
+// True when the feed supplied a real date more than a day in the future: the item is invalid (a bad feed
+// clock, or a placeholder) and is dropped by ingest. A date only slightly ahead (clock skew) is merely
+// treated as missing by parseDate. Real publication dates are never rewritten.
+const FAR_FUTURE_MS = 24 * 60 * 60 * 1000;
+export function isFarFutureDate(raw, now = Date.now()) {
+  const time = parseTime(raw);
+  return !Number.isNaN(time) && time > now + FAR_FUTURE_MS;
+}
+
+function parseTime(raw) {
+  if (!raw) return NaN;
   let text = String(raw).trim();
   // Dates without a zone ("October 28, 2026") would otherwise depend on the
   // runtime's time zone; pin them to UTC so results are the same everywhere.
   const isIso = /^\d{4}-\d\d-\d\d/.test(text);
   const hasZone = /(?:Z|GMT|UTC|[+-]\d{2}:?\d{2}|\b[A-Z]{2,4})$/.test(text);
   if (!isIso && !hasZone) text += " UTC";
-  const parsed = new Date(text);
-  const time = parsed.getTime();
-  if (Number.isNaN(time)) return null;
-  if (parsed.getUTCFullYear() < MIN_YEAR) return null;
-  if (time > now + FUTURE_TOLERANCE_MS) return null;
-  return parsed.toISOString();
+  return new Date(text).getTime();
 }
 
 function extractTag(block, tag) {
@@ -127,6 +140,7 @@ export function parseFeed(xml, { maxItems = 40, now = Date.now(), summaries = tr
       title,
       link,
       pubDate: parseDate(cleanText(dateRaw, 80), now),
+      futureDated: isFarFutureDate(cleanText(dateRaw, 80), now),
       publisher: sourceMatch ? cleanText(sourceMatch[1], 120) : "",
       summary: summaries ? cleanText(extractTag(block, isAtom ? "summary" : "description"), 200) : "",
     });

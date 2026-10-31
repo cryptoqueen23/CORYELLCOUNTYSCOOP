@@ -67,38 +67,95 @@ so the practical loss is small. If the Texas SOS webmaster allows the GitHub ran
 4. **raw.githubusercontent.com** is a best-effort CDN. If it is ever restricted, move the file to GitHub Pages (same data, new URL) -
    one constant in `app.js`.
 5. **Fallback Worker quality.** The production Worker still runs the old July code (legacy format; its "updated" time is assembly time,
-   not collection time, and it can show a 2014 SOS story dated 2028). It is only used when the static file is missing or stale.
+   not collection time). It is only used when the static file is missing or older than 150 minutes, and its future-dated or invalid stories
+   (such as the 2014 SOS release dated 2028) are now filtered out in the browser. It carries no local-place data, so it shows Texas Headlines only.
 6. **Data branch history grows** by about 24-60 small commits a day. If it ever matters, squash the data branch (nothing depends on its history).
 7. Failure emails go to the account that last edited the workflow's cron line.
 
-## Deployment steps (all need approval)
+## What the merge deploys (read before approving)
 
-1. Merge `scoop-sched-v3` into `main` (this adds the workflow, `collector/`, `feed-source.js`, the `app.js` change and `vercel.json`).
-   Vercel deploys the site. At this moment `data` does not exist yet, so the site simply falls back to the Worker (safe).
-2. Actions tab -> `collect-news` -> **Run workflow** (creates the `data` branch and the first `news.json`). Check the run summary:
-   14+ of 15 sources ok (Texas SOS 403 is expected).
-3. Open the static URL in a browser; confirm JSON and `schema: 3`. Reload the live site; the "Headlines updated" time should match the run.
-4. Leave the schedule running for 24-48 h with the Worker untouched. Check: runs on time, `data` commits, no Vercel deployment for `data`,
-   page shows fresh stories, stale warning absent.
-5. Only then (separate approval) retire the Worker: remove it from `FEED_URLS` in `app.js`, delete the Worker, and archive `rss-worker/worker.js`
-   and `wrangler*.toml` (keep `rss-worker/lib`, which the collector uses).
+`scoop-sched-v3` is 19 commits ahead of `main`. Merging it puts the WHOLE modernised site live on Vercel (new `index.html` and
+`styles.css`, the insurance section driven by `site-config.json`, accessibility work, the new feed reader), not only the feed switch.
+The Worker is NOT deployed by the merge (it is deployed only with `wrangler`); confirm in the Cloudflare dashboard that no Git
+integration (Workers Builds) is attached to this repository before merging.
 
-## Rollback
+## Launch commands (run only after explicit approval)
 
-| Situation | Action |
+```bash
+cd C:/Users/insur/CORYELLCOUNTYSCOOP
+# 0. Pre-flight: everything green, nothing uncommitted, nothing already on main that we lack
+git status --short                         # expect: nothing
+node --test "test/*.test.js"               # 44 pass
+node --test collector/test/collect.test.mjs# 11 pass
+(cd rss-worker && npm test)                # 77 pass
+git fetch origin && git rev-list --left-right --count origin/main...scoop-sched-v3   # expect: 0 19 (or 0 N)
+git rev-parse origin/main                  # note this SHA: it is the rollback target for the site
+
+# 1. Merge and push (this is what makes Vercel deploy the site)
+git switch main && git pull --ff-only origin main
+git merge --no-ff scoop-sched-v3 -m "Launch: GitHub Actions news collector, static feed loader, modernised site"
+git push origin main
+
+# 2. Wait for the Vercel deployment to be Ready (dashboard, or: gh api repos/cryptoqueen23/CORYELLCOUNTYSCOOP/commits/main/status -q .state)
+# 3. Create the data branch and the first news.json
+gh workflow run collect-news.yml
+gh run watch $(gh run list --workflow collect-news.yml --limit 1 --json databaseId -q '.[0].databaseId')
+# 4. Confirm the file is published
+curl -s https://raw.githubusercontent.com/cryptoqueen23/CORYELLCOUNTYSCOOP/data/news.json | head -c 300
+```
+
+Cleanup after the observation period (separate approval): `git push origin --delete scratch/actions-poc scratch/actions-poc-data`.
+
+## Verification checklist (first hour)
+
+- [ ] Vercel production deployment of the merge commit is Ready; `https://coryellcountyscoop.vercel.app` loads.
+- [ ] `collect-news` run succeeded; summary shows 14 or more of 15 sources ok (Texas SOS 403 is expected).
+- [ ] The `data` branch exists with `news.json` and `vercel.json`; **no Vercel deployment** appears for the `data` commit.
+- [ ] The static URL returns JSON with `"schema":3` and a recent `tick.at`.
+- [ ] The live page shows "Headlines updated ... Central" matching that run, local stories first, labels "Government announcement" / "News report", dates on stories.
+- [ ] Browser network tab: the first request is the `raw.githubusercontent.com` URL (200); the Worker is NOT requested.
+- [ ] Phone width (320/375 px): no sideways scrolling; keyboard Tab reaches the skip link first.
+- [ ] After 2 hours: a second and third scheduled run happened (Actions tab), on roughly a 15-minute rhythm.
+
+## Observation period (24-48 h, Worker left running)
+
+Check at 1 h, 6 h, 24 h, 48 h: scheduled runs present, `data` commits at most ~1 an hour when nothing changes, page not showing the
+stale warning, no Vercel deployments from `data`, failing sources limited to Texas SOS (and occasional Governor/DPS/Scorecard blips).
+
+## Rollback (actual behaviour, verified in tests and in a browser)
+
+| Situation | What happens / what to do |
 |---|---|
-| Collector misbehaves, site otherwise fine | Actions tab -> disable `collect-news`. The site shows the last published file, then falls back to the Worker once it is stale (150 min). |
-| Bad data published | Revert the last commit on `data` (`git revert` and push), or delete `data/news.json` so the site uses the Worker. |
-| Site change misbehaves | Revert the merge commit on `main` (Vercel redeploys the previous site, which reads the Worker only; the Worker format is unchanged so nothing else is needed). |
-| Static host problem | Change `STATIC_FEED_URL` in `app.js`, or remove it from `FEED_URLS`. |
+| **Workflow disabled or stopped** | Nothing breaks at once. The last `news.json` stays at the static URL. The page keeps using it for **150 minutes after the collector last ran**, without calling the Worker (checked at 10, 30 and 149 min). From 150 min on, the page asks the Worker and shows the fresher valid copy. After the Worker is retired, the old static file keeps showing with the page's "has not refreshed recently" warning. Re-enable: `gh workflow enable collect-news.yml`. |
+| Bad data published | Revert the last commit on `data` and push, or delete `news.json` on `data`; the page falls back to the Worker. |
+| Site change misbehaves | `git revert -m 1 <merge commit>` on `main` and push; Vercel redeploys. The previous site reads the Worker only, and the Worker is untouched. Rollback target SHA is the `origin/main` noted in step 0. |
+| Static host problem | Change `STATIC_FEED_URL` in `app.js` (e.g. to GitHub Pages) or remove it from `FEED_URLS`. |
 
-The Worker is not modified at any point before step 5, so rolling back never depends on restoring it.
+The Worker is not modified at any point before it is retired, so rollback never depends on restoring it. When the Worker is used as the
+fallback, stories with a date more than a day ahead, a date before 2010, an unreadable date or a non-http(s) link are dropped; real dates are never
+rewritten.
+
+## Date rules (current)
+
+- Collector: a publisher date more than 1 day in the future drops the story (bad feed clock). A date only slightly ahead, or before 2010, is treated as
+  missing: the story shows "Date not provided" and is labelled with when it was first seen (kept separate from its publication date, never shown as one).
+  Valid dates are stored exactly as the publisher gave them.
+- Browser (`feed-build.js`): also drops any story whose reference time is more than a day ahead.
+- Fallback Worker (`news-logic.js` legacy adapter): same rules as above, applied in the browser.
+
+## Observed in the proof of concept: stories that "disappear"
+
+Between a 03:xx and a 15:xx run 21 saved stories looked missing. Checked one by one against the live sources: 12 KWTX stories
+(older than the oldest item KWTX lists now), 1 Gatesville Messenger "Briefs" item (the publisher's list now starts a week later), and 8
+Lampasas Dispatch stories that were never removed: that site returns the same links with `https` at one time and `http` at another, so
+a link comparison saw them as different. No story is discarded by our code before its source drops it, its `maxAgeDays`, or the per-source cap.
+(Collected stories are replaced by each successful fetch of that source; keeping rolled-off stories until `maxAgeDays` would be a separate change.)
 
 ## Checks (run before merging)
 
 ```
-node --test "test/*.test.js"                 # site: 40 tests
+node --test "test/*.test.js"                 # site: 44 tests
 node --test collector/test/collect.test.mjs  # collector: 11 tests
-cd rss-worker && npm test                    # library + legacy Worker: 73 tests
+cd rss-worker && npm test                    # library + legacy Worker: 77 tests
 node collector/test/browser-check.cjs <news.json>   # manual: Playwright + axe, needs playwright-core / axe-core from other projects
 ```

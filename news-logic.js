@@ -233,11 +233,23 @@
   // The previous Worker version (before the 2026 rewrite) returned a plain list of
   // headlines. If the Worker is ever rolled back, show them rather than an error.
   // They carry no place or topic data, so they appear only under Texas Headlines.
-  function adaptLegacySnapshot(data) {
+  // The old Worker did no date checking (it once served a 2014 release dated 2028), so the same rules the
+  // current pipeline applies are enforced here: a link that is not http(s), a date that cannot be read, a date
+  // before 2010, or a date more than a day ahead means the story is dropped. A valid date is kept exactly as given.
+  function legacyStoryIsValid(s, now) {
+    if (!s || !s.title || !/^https?:\/\//i.test(String(s.link || ""))) return false;
+    if (s.pubDate === null || s.pubDate === undefined || s.pubDate === "") return true;
+    var time = Date.parse(s.pubDate);
+    if (isNaN(time) || new Date(time).getUTCFullYear() < 2010) return false;
+    return time - now <= 24 * 3600000;
+  }
+
+  function adaptLegacySnapshot(data, now) {
     if (!data || !Array.isArray(data.stories)) return null;
+    var reference = typeof now === "number" ? now : Date.now();
     var stories = data.stories
       .filter(function (s) {
-        return s && s.title && s.link;
+        return legacyStoryIsValid(s, reference);
       })
       .map(function (s) {
         return {
