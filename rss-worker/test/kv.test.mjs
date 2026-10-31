@@ -169,3 +169,12 @@ test("saved validators round-trip, including quotes, without parsing the record"
   assert.equal(savedValidators(null), null);
   assert.equal(savedValidators('{"t":"x","f":0,"e":null,"h":"a","et":"","lm":"","items":[]}'), null);
 });
+
+test("a failed fetch records who answered and a short, number-free snippet, so the same failure reads the same each time", async () => {
+  const { describeFailure } = await import("../lib/fetchers.js");
+  const a = await describeFailure(new Response("<html><body>Web server returned an unknown error 2026-10-30 18:01</body></html>", { status: 520, headers: { server: "cloudflare" } }));
+  const b = await describeFailure(new Response("<html><body>Web server returned an unknown error 2026-10-30 19:44</body></html>", { status: 520, headers: { server: "cloudflare" } }));
+  assert.equal(a, b);
+  assert.match(a, /^HTTP 520 \[cloudflare\] Web server returned an unknown error/);
+  assert.equal(await describeFailure(new Response("", { status: 503 })), "HTTP 503");
+});

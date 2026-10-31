@@ -29,6 +29,20 @@ async function readHead(response, limit) {
   return text.slice(0, limit);
 }
 
+// Says who answered and what, so a recurring error (Leader Press returned HTTP 520 from Cloudflare's network
+// although it loads fine elsewhere) can be told apart: the origin refusing us, or Cloudflare itself.
+// Digits are dropped from the snippet so a changing timestamp does not make the same failure look new.
+export async function describeFailure(response) {
+  const server = (response.headers.get("server") || "").slice(0, 30);
+  let snippet = "";
+  try {
+    snippet = (await response.text()).slice(0, 200).replace(/<[^>]*>/g, " ").replace(/[\d\s]+/g, " ").trim().slice(0, 50);
+  } catch {
+    // body unavailable
+  }
+  return `HTTP ${response.status}${server ? ` [${server}]` : ""}${snippet ? ` ${snippet}` : ""}`;
+}
+
 class FetchError extends Error {
   constructor(message, retryable) {
     super(message);
@@ -66,7 +80,7 @@ async function fetchOnce(url, accept, headChars = MAX_BYTES, cond = null) {
       return "";
     }
     if (!response.ok) {
-      throw new FetchError(`HTTP ${response.status}`, response.status >= 500);
+      throw new FetchError(await describeFailure(response), response.status >= 500);
     }
     if (cond) {
       cond.gotEt = response.headers.get("etag") || "";
