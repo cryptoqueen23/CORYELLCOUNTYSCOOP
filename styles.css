@@ -671,6 +671,9 @@ h1, h2, h3 { overflow-wrap: anywhere; }
 
 .search-lead { max-width: 60ch; margin: 0 0 20px; color: rgba(255, 255, 255, 0.88); }
 .scope-note { margin: 12px 0 0; font-size: 0.85rem; color: rgba(255, 255, 255, 0.78); }
+/* Shown while a search or filter is active: the results panel sits well below the search box. */
+.results-jump { margin: 8px 0 0; font-weight: 700; color: #fff; }
+.results-jump a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 
 .filters {
   display: grid;

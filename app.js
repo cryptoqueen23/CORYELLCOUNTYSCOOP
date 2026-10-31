@@ -299,7 +299,18 @@ function setResultCount(count) {
     status.textContent = text;
     lastStatus = text;
   }
+  // The results panel is far below the search box, so say how many matched right next to it (not a live region).
+  const jump = document.querySelector("#results-jump");
+  jump.hidden = count === null;
+  if (count !== null) document.querySelector("#results-jump-count").textContent = `${count} ${count === 1 ? "story matches" : "stories match"}.`;
 }
+
+document.querySelector("#results-jump-link").addEventListener("click", (event) => {
+  event.preventDefault();
+  const heading = document.querySelector("#results-h");
+  heading.scrollIntoView({ block: "start" });
+  heading.focus();
+});
 
 function renderLatestBar(now) {
   const bar = document.querySelector("#latest-bar");

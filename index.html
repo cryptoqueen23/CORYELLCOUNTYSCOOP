@@ -94,6 +94,7 @@
           <div class="field field-wide">
             <label for="q">Search current headlines</label>
             <input type="search" id="q" name="q" autocomplete="off" placeholder="Try &quot;budget&quot;, &quot;ISD&quot; or &quot;US 190&quot;">
+            <p class="results-jump" id="results-jump" hidden><span id="results-jump-count"></span> <a href="#results-h" id="results-jump-link">Show the results</a></p>
           </div>
           <div class="field">
             <label for="f-location">Place</label>
@@ -267,7 +268,7 @@
       <div class="section-heading">
         <div>
           <p class="eyebrow">Filtered results</p>
-          <h2 id="results-h">Matching stories</h2>
+          <h2 id="results-h" tabindex="-1">Matching stories</h2>
         </div>
       </div>
       <div class="story-list" id="results-list"></div>
